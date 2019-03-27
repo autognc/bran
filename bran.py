@@ -21,6 +21,7 @@ from PyInquirer import Validator, ValidationError
 from boto.s3.key import Key
 import configparser
 from os.path import expanduser
+import tempfile
 
 
 def get_local_awsconfig():
@@ -207,16 +208,17 @@ def main():
         s3.Object(bucket_name, 'keypair.pem').put(Body=bytes(key_pair_out, 'utf8'))
 
 
+    temp_path = os.path.join(tempfile.gettempdir(), 'keypair.pem')
     # stores keypair for ssh access on local machine in tmp folder
     try:
-        bucket.download_file('keypair.pem', '/tmp/keypair.pem')
+        bucket.download_file('keypair.pem', temp_path)
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
             print("The object does not exist.")
         else:
             raise
 
-    subprocess.call(['chmod', '400', '/tmp/keypair.pem'])
+    subprocess.call(['chmod', '400', temp_path])
 
     # creates ec2 instance
     instance = ec2.create_instances(
@@ -256,7 +258,7 @@ def main():
     instances = ec2.meta.client.describe_instances(InstanceIds=instance_id)
     dns = user_name + '@' + instances['Reservations'][0]['Instances'][0]['PublicDnsName']
 
-    key_file = '/tmp/keypair.pem'
+    key_file = temp_path
 
     ssh_string = 'ssh -i ' + key_file + ' ' + dns
 
