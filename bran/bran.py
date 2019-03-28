@@ -23,7 +23,6 @@ import configparser
 from os.path import expanduser
 import tempfile
 
-
 def get_local_awsconfig():
     """
     Gets the aws credentials stored on the local machine. The AWSCLI configuration 
@@ -189,24 +188,40 @@ def main():
     
     # reads keypair from s3 bucket. If it doesn't exist, then creates both
     # the bucket and the keypair.
-    bucket = s3.Bucket(bucket_name)
-    if not s3.Bucket(bucket_name) in s3.buckets.all():
-        print("creating bucket to store keypair...")
-        bucket = s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={
-        'LocationConstraint': 'us-west-1'})
 
-    exists = False
+    bucket_exists = False
+    for buck in list(s3.buckets.all()):
+        if buck.name.startswith(bucket_name):
+            bucket_name = buck.name
+            bucket_exists = True
+
+    rand_int = str(randint(1,9999999))
+    rand_int = "0"*(7-len(rand_int)) + rand_int
+
+    while not bucket_exists:
+        try:
+            print("creating bucket to store keypair...")
+            bucket = s3.create_bucket(Bucket=bucket_name+'-'+rand_int, CreateBucketConfiguration={
+            'LocationConstraint': 'us-west-1'})
+            bucket_exists = True
+            bucket_name = bucket_name+'-'+rand_int
+        except:
+            rand_int = str(randint(1,9999999))
+            rand_int = "0"*(7-len(rand_int)) + rand_int
+
+    bucket = s3.Bucket(bucket_name)
+
+    file_exists = False
     for f in bucket.objects.all():
         if f.key == 'keypair.pem':
-            exists = True
+            file_exists = True
 
-    if not exists:
+    if not file_exists:
         print("creating new keypair...")
         key_pair = ec2.create_key_pair(KeyName='keypair')
         key_pair_out = str(key_pair.key_material)
 
         s3.Object(bucket_name, 'keypair.pem').put(Body=bytes(key_pair_out, 'utf8'))
-
 
     temp_path = os.path.join(tempfile.gettempdir(), 'keypair.pem')
     # stores keypair for ssh access on local machine in tmp folder
