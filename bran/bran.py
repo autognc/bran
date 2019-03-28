@@ -165,6 +165,9 @@ def main():
     questions = get_questions()
     answers = prompt(questions, style=style)
 
+    if len(answers['storage']) == 0:
+        answers['storage'] = 30
+
     # prepare data for ec2
     storage_info=[
         {
