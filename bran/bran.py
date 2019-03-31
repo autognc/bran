@@ -208,7 +208,8 @@ def main():
             'LocationConstraint': 'us-west-1'})
             bucket_exists = True
             bucket_name = bucket_name+'-'+rand_int
-        except:
+        except Exception as e:
+            print("error creating bucket:", e)
             rand_int = str(randint(1,9999999))
             rand_int = "0"*(7-len(rand_int)) + rand_int
 
