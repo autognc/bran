@@ -22,6 +22,7 @@ from boto.s3.key import Key
 import configparser
 from os.path import expanduser
 import tempfile
+from sys import platform
 
 def get_local_awsconfig():
     """
@@ -205,7 +206,7 @@ def main():
         try:
             print("creating bucket to store keypair...")
             bucket = s3.create_bucket(Bucket=bucket_name+'-'+rand_int, CreateBucketConfiguration={
-            'LocationConstraint': 'us-west-1'})
+            'LocationConstraint': aws_config['region']})
             bucket_exists = True
             bucket_name = bucket_name+'-'+rand_int
         except Exception as e:
@@ -281,12 +282,15 @@ def main():
 
     ssh_string = 'ssh -i ' + key_file + ' ' + dns
 
-    print("\nSSH String: ", ssh_string)
-    
+    print("\nCommand to SSH: ", ssh_string)
     # automatically copies command to access bash of raven docker container
     command_str = "sudo docker exec -it my_raven bash"
-    print("\nCommand to use raven docker container (copied to clipboard):", command_str,"\n\n")
-    pyperclip.copy(command_str)
+
+    if platform == "linux" or platform == "linux2":
+        print("\nCommand to access raven docker container:", command_str,"\n\n")
+    else:
+        print("\nCommand to access raven docker container (copied to clipboard):", command_str,"\n\n")
+        pyperclip.copy(command_str)
 
     subprocess.call(['ssh', '-i', key_file, dns])
 
