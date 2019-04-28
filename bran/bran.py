@@ -195,6 +195,8 @@ def main():
     # reads keypair from s3 bucket. If it doesn't exist, then creates both
     # the bucket and the keypair.
 
+    aws_config = get_local_awsconfig()
+
     bucket_exists = False
     for buck in list(s3.buckets.all()):
         if buck.name.startswith(bucket_name):
