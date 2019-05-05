@@ -114,13 +114,18 @@ def get_questions():
             'type': 'input',
             'name': 'storage',
             'message': 'Enter storage amount (gb)'
+        },
+        {
+            'type': 'input',
+            'name': 'docker_bucket',
+            'message': 'Enter name of bucket where docker files are stored'
         }
     ]
 
     return questions
 
 
-def get_init_script():
+def get_init_script(docker_bucket):
     """
     Bash script represented as a string that will run on startup in the ec2 
     instance. Downloads the various requirements for raven and starts a docker 
@@ -130,6 +135,7 @@ def get_init_script():
         user_data_script (string): The boto3 ec2 create instance method converts
             the string to a bash script
     """
+    aws_config = get_local_awsconfig()
 
     user_data_script = """
     #!/bin/bash
@@ -137,15 +143,20 @@ def get_init_script():
     yum -y update
     yum -y install docker
     service docker start
-    docker pull ubuntu
     echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instance-id))" >> /etc/profile
+    echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
+    echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
+    echo "export AWS_REGION=$(echo {})" >> /etc/profile
     source /etc/profile
-    """
-
-    aws_config = get_local_awsconfig()
+    mkdir /tmp/dock
+    aws s3 cp s3://{}/Dockerfile /tmp/dock/Dockerfile
+    aws s3 cp s3://{}/docker-entrypoint.sh /tmp/dock/docker-entrypoint.sh
+    cd /tmp/dock
+    docker build -t raven:latest .
+    """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], docker_bucket, docker_bucket)
 
     # adds AWS creds as environment variables to the docker container
-    dock_string = "\ndocker run --name my_raven -d -it -e AWS_ACCESS_KEY_ID=%s -e AWS_SECRET_ACCESS_KEY=%s -e AWS_REGION=%s -e AWS_OUTPUT=%s -e EC2_ID ubuntu" %(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], aws_config['output'])
+    dock_string = "\ndocker run --name my_raven -d -it -e AWS_ACCESS_KEY_ID=%s -e AWS_SECRET_ACCESS_KEY=%s -e AWS_REGION=%s -e AWS_OUTPUT=%s -e EC2_ID raven" %(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], aws_config['output'])
     user_data_script += dock_string
 
     return user_data_script
@@ -183,7 +194,7 @@ def main():
     ]
     user_name = 'ec2-user'
     bucket_name = 'tsl-ec2-keypair'
-    user_data_script = get_init_script()
+    user_data_script = get_init_script(answers['docker_bucket'])
     security_groups = []
     for sg in answers['sg']:
         sg_id = sg.split(":")[0]
