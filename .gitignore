@@ -1,2 +1,3 @@
 bran.egg-info
 *.pyc
+*.cpython-37.pyc
