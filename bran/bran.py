@@ -157,7 +157,7 @@ def get_init_script(docker_bucket):
     """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], docker_bucket, docker_bucket)
 
     # adds AWS creds as environment variables to the docker container
-    dock_string = "\ndocker run --name my_raven -d -it -e AWS_ACCESS_KEY_ID=%s -e AWS_SECRET_ACCESS_KEY=%s -e AWS_REGION=%s -e AWS_OUTPUT=%s -e EC2_ID raven" %(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], aws_config['output'])
+    dock_string = "\ndocker run --name my_raven -d -it -e LC_ALL=C.UTF-8 -e LANG=C.UTF-8 -e AWS_ACCESS_KEY_ID=%s -e AWS_SECRET_ACCESS_KEY=%s -e AWS_REGION=%s -e AWS_OUTPUT=%s -e EC2_ID raven" %(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], aws_config['output'])
     user_data_script += dock_string
 
     return user_data_script
