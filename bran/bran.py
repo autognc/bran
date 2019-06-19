@@ -119,7 +119,7 @@ def get_questions():
             'type': 'input',
             'name': 'docker_bucket',
             'message': 'Enter name of bucket where docker files are stored',
-            'default': 'tsl-docker-files'
+            'default': 'bran-docker-files'
         }
     ]
 
