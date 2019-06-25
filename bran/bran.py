@@ -151,9 +151,10 @@ def get_init_script(docker_bucket):
     source /etc/profile
     mkdir /tmp/dock
     aws s3 cp s3://{}/Dockerfile /tmp/dock/Dockerfile
-    aws s3 cp s3://{}/docker-entrypoint.sh /tmp/dock/docker-entrypoint.sh
+    aws s3 cp s3://{}/setup_script.sh /tmp/dock/setup_script.sh
+    chmod +x /tmp/dock/setup_script.sh
     cd /tmp/dock
-    docker build -t raven:latest .
+    docker build --rm -t raven:latest .
     """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], docker_bucket, docker_bucket)
 
     # adds AWS creds as environment variables to the docker container
@@ -161,7 +162,6 @@ def get_init_script(docker_bucket):
     user_data_script += dock_string
 
     return user_data_script
-
 
 def main():
 
@@ -286,6 +286,8 @@ def main():
         idx += 1
         if idx % 70 == 0:
             status = ec2.meta.client.describe_instance_status(InstanceIds=instance_id)
+
+    time.sleep(500)
     print("\ninstance", instance_id[0], "initialized")
 
 

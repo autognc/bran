@@ -1,4 +1,3 @@
-# Pull base image.
 FROM ubuntu:18.04
 
 # Install.
@@ -23,11 +22,12 @@ ENV HOME /root
 # Define working directory.
 WORKDIR /root
 
-COPY ./docker-entrypoint.sh /
+COPY ./setup_script.sh .
 #RUN ln -s usr/local/bin/docker-entrypoint.sh / # backwards compat
+RUN ./setup_script.sh
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
-RUN chmod +x /docker-entrypoint.sh
+#ENTRYPOINT ["/docker-entrypoint.sh"]
+#RUN chmod +x /docker-entrypoint.sh
 
 # Define default command.
 CMD ["bash"]
