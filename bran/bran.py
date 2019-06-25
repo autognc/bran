@@ -87,7 +87,7 @@ def get_questions():
             a different question
     """
 
-    amis = ['Amazon Linux AMI 2018.03.0:ami-0ec6517f6edbf8044']
+    amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78']
     instance_types = ['t2.micro', 'p2.xlarge', 'g3s.xlarge', 'g3.4xlarge']
     sg_names = get_security_groups()
     
@@ -138,28 +138,34 @@ def get_init_script(docker_bucket):
     """
     aws_config = get_local_awsconfig()
 
-    user_data_script = """
-    #!/bin/bash
-    sudo su
-    yum -y update
-    yum -y install docker
-    service docker start
-    echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instance-id))" >> /etc/profile
+    user_data_script = """#!/bin/bash
+    pip -V >> /tmp/pip.txt
+    pip3 -V >> /tmp/pip.txt
+    sudo add-apt-repository -y ppa:jonathonf/python-3.6 >> /tmp/log.txt
+    sudo apt -y update >> /tmp/log.txt
+    sudo apt install -y python3.6 >> /tmp/log.txt
+    wget https://bootstrap.pypa.io/get-pip.py >> /tmp/log.txt
+    sudo python3.6 get-pip.py >> /tmp/log.txt
+    sudo rm -rf /usr/local/bin/pip >> /tmp/log.txt
+    sudo ln -s /usr/local/bin/pip3 /usr/local/bin/pip >> /tmp/log.txt
     echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
     echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
     echo "export AWS_REGION=$(echo {})" >> /etc/profile
     source /etc/profile
-    mkdir /tmp/dock
-    aws s3 cp s3://{}/Dockerfile /tmp/dock/Dockerfile
-    aws s3 cp s3://{}/setup_script.sh /tmp/dock/setup_script.sh
-    chmod +x /tmp/dock/setup_script.sh
-    cd /tmp/dock
-    docker build --rm -t raven:latest .
-    """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], docker_bucket, docker_bucket)
-
-    # adds AWS creds as environment variables to the docker container
-    dock_string = "\ndocker run --name my_raven -d -it -e LC_ALL=C.UTF-8 -e LANG=C.UTF-8 -e AWS_ACCESS_KEY_ID=%s -e AWS_SECRET_ACCESS_KEY=%s -e AWS_REGION=%s -e AWS_OUTPUT=%s -e EC2_ID raven" %(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], aws_config['output'])
-    user_data_script += dock_string
+    git clone https://github.com/autognc/ravenML.git >> /tmp/log.txt
+    git clone https://github.com/autognc/ravenML-plugins.git >> /tmp/log.txt
+    pip -V >> /tmp/log.txt
+    pip install --upgrade setuptools >> /tmp/log.txt
+    pip install pip-tools >> /tmp/log.txt
+    cd ravenML >> /tmp/log.txt
+    pip install -r requirements.txt >> /tmp/log.txt
+    pip install -e . >> /tmp/log.txt
+    pip install halo >> /tmp/log.txt
+    pip install pyyaml >> /tmp/log.txt
+    cd ../ravenML-plugins >> /tmp/log.txt
+    export LC_ALL=C.UTF-8 >> /tmp/log.txt
+    export LANG=C.UTF-8 >> /tmp/log.txt
+    ./install_all.sh >> /tmp/log.txt""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'])
 
     return user_data_script
 
@@ -193,7 +199,7 @@ def main():
             }
         }
     ]
-    user_name = 'ec2-user'
+    user_name = 'ubuntu'
     bucket_name = 'tsl-ec2-keypair'
     user_data_script = get_init_script(answers['docker_bucket'])
     security_groups = []
@@ -287,7 +293,7 @@ def main():
         if idx % 70 == 0:
             status = ec2.meta.client.describe_instance_status(InstanceIds=instance_id)
 
-    time.sleep(500)
+    #time.sleep(500)
     print("\ninstance", instance_id[0], "initialized")
 
 
