@@ -87,9 +87,9 @@ def get_questions():
             a different question
     """
 
-    amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78', 'Ubuntu Base Image:ami-06397100adf427136']
+    amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78']
     instance_types = ['t2.micro', 'p2.xlarge', 'g3s.xlarge', 'g3.4xlarge']
-    sg_names = get_security_groups()
+    sg_names = get_security_groups().reverse()
     
     questions = [
         {
@@ -152,7 +152,8 @@ def get_init_script(bran_bucket):
     aws s3 cp s3://{}/install_raven.sh .
     chmod +x install_raven.sh
     export LC_ALL=C.UTF-8
-    export LANG=C.UTF-8""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], bran_bucket)
+    export LANG=C.UTF-8
+    runuser -l ubuntu -c './install_raven.sh >> /tmp/install.txt'""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], bran_bucket)
 
     return user_data_script
 
