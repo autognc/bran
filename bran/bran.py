@@ -2,7 +2,7 @@
 Filename:       bran.py
 Author(s):      Nihal Dhamani
 Contact:        nihaldhamani@gmail.com
-Date Modified:  3/26/19
+Date Modified:  06/29/19
 
 Bran is used as a cli to automatically create and ssh into an ec2 instance 
 given user input settings. Bran automatically sets up the docker container 
@@ -149,7 +149,7 @@ def get_init_script(bran_bucket, plugin):
     echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instance-id))" >> /etc/profile
     echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
     echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
-    echo "export AWS_REGION=$(echo {})" >> /etc/profile
+    echo "export AWS_DEFAULT_REGION=$(echo {})" >> /etc/profile
     source /etc/profile
     cd /home/ubuntu
     git clone https://github.com/autognc/ravenML.git
