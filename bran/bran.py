@@ -57,7 +57,7 @@ def list_to_choices(l):
     Return:
         choices ([dicts]): a list of dictionaries
     """
-    l = sorted(l)[::-1]
+    l = sorted(l)
     choices = []
     for item in l:
         choices.append({'name': item})
@@ -87,9 +87,10 @@ def get_questions():
             a different question
     """
 
-    amis = ['Amazon Linux AMI 2018.03.0:ami-0ec6517f6edbf8044']
-    instance_types = ['t2.micro', 'p2.xlarge', 'g3s.xlarge', 'g3.4xlarge']
+    amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78']
+    instance_types = ['t2.micro', 't2.medium', 'g3s.xlarge', 'g3.4xlarge']
     sg_names = get_security_groups()
+    plugins = ['ravenml_tf_bbox', 'ravenml_tf_semantic']
     
     questions = [
         {
@@ -117,16 +118,22 @@ def get_questions():
         },
         {
             'type': 'input',
-            'name': 'docker_bucket',
-            'message': 'Enter name of bucket where docker files are stored',
-            'default': 'bran-docker-files'
+            'name': 'bran_bucket',
+            'message': 'Enter name of bucket where bran install files are stored',
+            'default': 'bran-install-files'
+        },
+        {
+            'type': 'list',
+            'name': 'plugin',
+            'message': 'Select the ravenML plugin you wish to install',
+            'choices': list_to_choices(plugins)
         }
     ]
 
     return questions
 
 
-def get_init_script(docker_bucket):
+def get_init_script(bran_bucket, plugin):
     """
     Bash script represented as a string that will run on startup in the ec2 
     instance. Downloads the various requirements for raven and starts a docker 
@@ -138,28 +145,22 @@ def get_init_script(docker_bucket):
     """
     aws_config = get_local_awsconfig()
 
-    user_data_script = """
-    #!/bin/bash
-    sudo su
-    yum -y update
-    yum -y install docker
-    service docker start
+    user_data_script = """#!/bin/bash
     echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instance-id))" >> /etc/profile
     echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
     echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
     echo "export AWS_REGION=$(echo {})" >> /etc/profile
     source /etc/profile
-    mkdir /tmp/dock
-    aws s3 cp s3://{}/Dockerfile /tmp/dock/Dockerfile
-    aws s3 cp s3://{}/setup_script.sh /tmp/dock/setup_script.sh
-    chmod +x /tmp/dock/setup_script.sh
-    cd /tmp/dock
-    docker build --rm -t raven:latest .
-    """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], docker_bucket, docker_bucket)
-
-    # adds AWS creds as environment variables to the docker container
-    dock_string = "\ndocker run --name my_raven -d -it -e LC_ALL=C.UTF-8 -e LANG=C.UTF-8 -e AWS_ACCESS_KEY_ID=%s -e AWS_SECRET_ACCESS_KEY=%s -e AWS_REGION=%s -e AWS_OUTPUT=%s -e EC2_ID raven" %(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], aws_config['output'])
-    user_data_script += dock_string
+    cd /home/ubuntu
+    git clone https://github.com/autognc/ravenML.git
+    git clone https://github.com/autognc/ravenML-plugins.git
+    chown -R ubuntu:ubuntu ravenML/
+    chown -R ubuntu:ubuntu ravenML-plugins/
+    aws s3 cp s3://{}/install_raven.sh .
+    chmod +x install_raven.sh
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    runuser -l ubuntu -c './install_raven.sh -p {} >> /tmp/install.txt'""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], bran_bucket, plugin)
 
     return user_data_script
 
@@ -193,9 +194,9 @@ def main():
             }
         }
     ]
-    user_name = 'ec2-user'
+    user_name = 'ubuntu'
     bucket_name = 'tsl-ec2-keypair'
-    user_data_script = get_init_script(answers['docker_bucket'])
+    user_data_script = get_init_script(answers['bran_bucket'], answers['plugin'])
     security_groups = []
     for sg in answers['sg']:
         sg_id = sg.split(":")[0]
@@ -286,9 +287,10 @@ def main():
         idx += 1
         if idx % 70 == 0:
             status = ec2.meta.client.describe_instance_status(InstanceIds=instance_id)
-
-    time.sleep(500)
+    
     print("\ninstance", instance_id[0], "initialized")
+    print("installing ravenML..")
+    time.sleep(100)
 
 
     # ssh into instance
@@ -300,15 +302,11 @@ def main():
 
     ssh_string = 'ssh -i ' + key_file + ' ' + dns
 
-    print("\nCommand to SSH: ", ssh_string)
-    # automatically copies command to access bash of raven docker container
-    command_str = "sudo docker exec -it my_raven bash"
-
     if platform == "linux" or platform == "linux2":
-        print("\nCommand to access raven docker container:", command_str,"\n\n")
+        print("\nCommand to SSH", ssh_string,"\n\n")
     else:
-        print("\nCommand to access raven docker container (copied to clipboard):", command_str,"\n\n")
-        pyperclip.copy(command_str)
+        print("\nCommand to SSH (copied to clipboard):", ssh_string,"\n\n")
+        pyperclip.copy(ssh_string)
 
     subprocess.call(['ssh', '-i', key_file, dns])
 
