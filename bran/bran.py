@@ -2,7 +2,7 @@
 Filename:       bran.py
 Author(s):      Nihal Dhamani
 Contact:        nihaldhamani@gmail.com
-Date Modified:  06/29/19
+Date Modified:  07/15/19
 
 Bran is used as a cli to automatically create and ssh into an ec2 instance 
 given user input settings. Bran automatically sets up the docker container 
@@ -88,7 +88,7 @@ def get_questions():
     """
 
     amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78']
-    instance_types = ['t2.micro', 't2.medium', 'g3s.xlarge', 'g3.4xlarge']
+    instance_types = ['t2.micro', 't2.medium', 'g3s.xlarge', 'p2.xlarge', 'g3.4xlarge']
     sg_names = get_security_groups()
     plugins = ['ravenml_tf_bbox', 'ravenml_tf_semantic']
     
@@ -127,13 +127,19 @@ def get_questions():
             'name': 'plugin',
             'message': 'Select the ravenML plugin you wish to install',
             'choices': list_to_choices(plugins)
+        },
+        {
+            'type': 'list',
+            'name': 'gpu',
+            'message': 'Train on GPU or CPU?',
+            'choices': list_to_choices(['GPU', 'CPU'])
         }
     ]
 
     return questions
 
 
-def get_init_script(bran_bucket, plugin):
+def get_init_script(bran_bucket, plugin, gpu):
     """
     Bash script represented as a string that will run on startup in the ec2 
     instance. Downloads the various requirements for raven and starts a docker 
@@ -160,7 +166,7 @@ def get_init_script(bran_bucket, plugin):
     chmod +x install_raven.sh
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
-    runuser -l ubuntu -c './install_raven.sh -p {} >> /tmp/install.txt'""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], bran_bucket, plugin)
+    runuser -l ubuntu -c './install_raven.sh -p {} -g {} >> /tmp/install.txt'""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], bran_bucket, plugin, gpu)
 
     return user_data_script
 
@@ -196,7 +202,7 @@ def main():
     ]
     user_name = 'ubuntu'
     bucket_name = 'tsl-ec2-keypair'
-    user_data_script = get_init_script(answers['bran_bucket'], answers['plugin'])
+    user_data_script = get_init_script(answers['bran_bucket'], answers['plugin'], answers['gpu'].lower())
     security_groups = []
     for sg in answers['sg']:
         sg_id = sg.split(":")[0]

@@ -35,5 +35,4 @@ Developed on Python 3.6.8
 3. Select options for ec2 instance parameters. Make sure to select the custom security group created earlier.
 4. Wait until initialized
 5. Enter ```yes``` if prompted about adding ssh key to your repo and click enter
-6. You should be ssh'd into the instance already
-7. The command to run the raven container bash is copied to the clipboard, paste and click enter
+6. You should be ssh'd into the instance automatically with ravenML installed with the plugin selected
