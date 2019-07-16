@@ -3,7 +3,7 @@ gpu_or_cpu="notset"
 plugin_flag=d
 gpu_flag=d
 
-while getopts "pg:" opt; do
+while getopts "p:g:" opt; do
     case "$opt" in
         p)
             plugin_flag=p
