@@ -88,7 +88,7 @@ def get_questions():
     """
 
     amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78']
-    instance_types = ['t2.micro', 't2.medium', 'g3s.xlarge', 'p2.xlarge', 'g3.4xlarge']
+    instance_types = ['t2.medium', 'g3.4xlarge']
     sg_names = get_security_groups()
     plugins = ['ravenml_tf_bbox', 'ravenml_tf_semantic']
     
