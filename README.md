@@ -32,7 +32,7 @@ Developed on Python 3.6.8
 ## Instructions to Run
 1. Make sure that the credentials are stored at ```~/.aws/credentials```
 2. Command to run: ```bran```
-3. Select options for ec2 instance parameters. **Use gs3.4xlarge for GPU trainings and t2.medium for CPU trainings.** Make sure to select the custom security group created earlier.
+3. Select options for ec2 instance parameters. **Use g3.4xlarge for GPU trainings and t2.medium for CPU trainings.** Make sure to select the custom security group created earlier.
 4. Wait until initialized
 5. Enter ```yes``` if prompted about adding ssh key to your repo and click enter
 6. You should be ssh'd into the instance automatically with ravenML installed with the plugin selected
