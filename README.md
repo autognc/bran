@@ -36,3 +36,6 @@ Developed on Python 3.6.8
 4. Wait until initialized
 5. Enter ```yes``` if prompted about adding ssh key to your repo and click enter
 6. You should be ssh'd into the instance automatically with ravenML installed with the plugin selected
+7. start tmux by typing `tmux` into the shell
+8. type the ravenml train command you want inside the started tmux session
+9. leave/detach the tmux session by typing `Ctrl+b` and then `d`
