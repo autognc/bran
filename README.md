@@ -39,5 +39,5 @@ Developed on Python 3.6.8
 7. start tmux by typing `tmux` into the shell
 8. type the ravenml train command you want inside the started tmux session
 9. leave/detach the tmux session by typing `Ctrl+b` and then `d`
-10. run the following command to start tensorboard: `nohup tensorboard --logdir=/home/ubuntu/.ravenML/<plugin-name>/temp/models/model &`
-11. nagivate to `<ip-of-ec2-instance>:6006` in your browser to see tensorboard
+10. run the following command to start tensorboard: `nohup tensorboard --logdir=/home/ubuntu/.ravenML/<plugin-name>/temp/models/model --port=6007 &`
+11. nagivate to `<ip-of-ec2-instance>:6007` in your browser to see tensorboard
