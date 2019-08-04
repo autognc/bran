@@ -188,7 +188,7 @@ def main():
     answers = prompt(questions, style=style)
 
     if len(answers['storage']) == 0:
-        answers['storage'] = 30
+        answers['storage'] = 100
 
     # prepare data for ec2
     storage_info=[
