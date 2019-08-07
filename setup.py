@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='bran',
-    version='1.0.3',
+    version='1.1.0',
     description='EC2 instance creation CLI',
     packages=['bran'],
     install_requires=[

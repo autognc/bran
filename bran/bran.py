@@ -150,12 +150,14 @@ def get_init_script(bran_bucket, plugin, gpu):
             the string to a bash script
     """
     aws_config = get_local_awsconfig()
+    comet_api_key = get_comet_api_key()
 
     user_data_script = """#!/bin/bash
     echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instance-id))" >> /etc/profile
     echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
     echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
     echo "export AWS_DEFAULT_REGION=$(echo {})" >> /etc/profile
+    echo "export COMET_API_KEY=$(echo {})" >> /etc/profile
     source /etc/profile
     cd /home/ubuntu
     git clone https://github.com/autognc/ravenML.git
@@ -166,9 +168,18 @@ def get_init_script(bran_bucket, plugin, gpu):
     chmod +x install_raven.sh
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
-    runuser -l ubuntu -c './install_raven.sh -p {} -g {} >> /tmp/install.txt'""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], bran_bucket, plugin, gpu)
+    runuser -l ubuntu -c './install_raven.sh -p {} -g {} >> /tmp/install.txt'""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], comet_api_key, bran_bucket, plugin, gpu)
 
     return user_data_script
+
+def get_comet_api_key():
+
+    ssm = boto3.client('ssm')
+    
+    key_parameter = ssm.get_parameter(Name='COMET_API_KEY', WithDecryption=True)
+    api_key = key_parameter['Parameter']['Value']
+
+    return api_key
 
 def main():
 
