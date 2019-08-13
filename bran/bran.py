@@ -204,10 +204,10 @@ def main():
     # prepare data for ec2
     storage_info=[
         {
-            'DeviceName': '/dev/xvda',
+            'DeviceName': '/dev/sda1',
             'Ebs': {
                 'VolumeSize': int(answers['storage']),
-                'VolumeType': 'standard'
+                'VolumeType': 'gp2'
             }
         }
     ]
