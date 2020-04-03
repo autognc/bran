@@ -78,9 +78,9 @@ def get_security_groups():
     return sg_names
 
 
-def get_questions():
+def get_raven_questions():
     """
-    Constructs and returns questions for cli to set up ec2 instance properties.
+    Constructs and returns questions for cli to set up ec2 instance properties for a RavenML training.
 
     Return:
         questions ([dicts]): a list of dictionaries with each dictionary representing
@@ -88,7 +88,7 @@ def get_questions():
     """
 
     amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78']
-    instance_types = ['t2.medium', 'g3.4xlarge']
+    instance_types = ['t2.medium', 'g3.4xlarge', 't2.micro']
     sg_names = get_security_groups()
     plugins = ['ravenml_tf_bbox', 'ravenml_tf_semantic', 'ravenml_tf_instance']
     
@@ -138,8 +138,61 @@ def get_questions():
 
     return questions
 
+def get_blender_questions():
+    """
+    Constructs and returns questions for cli to set up ec2 instance properties for image generation with Blender.
 
-def get_init_script(bran_bucket, plugin, gpu):
+    Return:
+        questions ([dicts]): a list of dictionaries with each dictionary representing
+            a different question
+    """
+
+    amis = ['Blender:ami-0c66a2d9734c3f1aa','blender-trial:ami-0f0f23e775b8a5cbc']
+    instance_types = ['t2.large','t2.medium', 'g3.4xlarge', 't2.micro', ]
+    sg_names = get_security_groups()
+    
+    questions = [
+        {
+            'type': 'list',
+            'name': 'ami',
+            'message': 'Select AMI',
+            'choices': amis
+        },
+        {
+            'type': 'list',
+            'name': 'instance',
+            'message': 'Select Instance Type',
+            'choices': instance_types
+        },
+        {
+            'type': 'checkbox',
+            'name': 'sg',
+            'message': 'Select all Security Groups',
+            'choices': list_to_choices(sg_names)
+        },
+        {
+            'type': 'input',
+            'name': 'storage',
+            'message': 'Enter storage amount (gb)'
+        },
+        {
+            'type': 'input',
+            'name': 'model',
+            'message': 'Enter filepath of desired blender model',
+            'validate': lambda p: os.path.isfile(p)
+        },
+        {
+            'type': 'input',
+            'name': 'script',
+            'message': 'Enter filepath of generation script',
+            'validate': lambda p: os.path.isfile(p)
+        }
+    ]
+
+    return questions
+
+
+def get_raven_init_script(bran_bucket, plugin, gpu):
     """
     Bash script represented as a string that will run on startup in the ec2 
     instance. Downloads the various requirements for raven and starts a docker 
@@ -172,6 +225,22 @@ def get_init_script(bran_bucket, plugin, gpu):
 
     return user_data_script
 
+
+def get_blender_init_script():
+    """
+    Bash script represented as a string that will run on startup in the ec2 
+    instance. Adds Blender directory to path. 
+
+    Return:
+        user_data_script (string): The boto3 ec2 create instance method converts
+            the string to a bash script
+    """
+
+    user_data_script = """#!/bin/bash
+    """
+
+    return user_data_script
+
 def get_comet_api_key():
 
     ssm = boto3.client('ssm')
@@ -194,26 +263,54 @@ def main():
     Token.Question: '',
     })
 
+    purpose_question = [
+        {
+            'type': 'list',
+            'name': 'purpose',
+            'message': 'Select Instance Purpose',
+            'choices': ["Blender Image Generation", "RavenML Training"]
+        }
+    ]
+    purpose_answer = prompt(purpose_question, style=style)
+
     print("Warning: choose these options carefully as they are associated with real costs")
-    questions = get_questions()
+    if purpose_answer["purpose"] == "RavenML Training":
+        questions = get_raven_questions()
+    else:
+        questions = get_blender_questions()
     answers = prompt(questions, style=style)
 
     if len(answers['storage']) == 0:
         answers['storage'] = 100
 
     # prepare data for ec2
-    storage_info=[
-        {
-            'DeviceName': '/dev/sda1',
-            'Ebs': {
-                'VolumeSize': int(answers['storage']),
-                'VolumeType': 'gp2'
+
+    if purpose_answer["purpose"] == "RavenML Training":
+        storage_info=[
+            {
+                'DeviceName': '/dev/sda1',
+                'Ebs': {
+                    'VolumeSize': int(answers['storage']),
+                    'VolumeType': 'gp2'
+                }
             }
-        }
-    ]
-    user_name = 'ubuntu'
+        ]
+        user_name = 'ubuntu'
+        user_data_script = get_raven_init_script(answers['bran_bucket'], answers['plugin'], answers['gpu'].lower())
+    else:
+        storage_info=[
+            {
+                'DeviceName': '/dev/xvda',
+                'Ebs': {
+                    'VolumeSize': int(answers['storage']),
+                    'VolumeType': 'gp2'
+                }
+            }
+        ]
+        user_name = "ec2-user"
+        user_data_script = get_blender_init_script()
+
     bucket_name = 'tsl-ec2-keypair'
-    user_data_script = get_init_script(answers['bran_bucket'], answers['plugin'], answers['gpu'].lower())
     security_groups = []
     for sg in answers['sg']:
         sg_id = sg.split(":")[0]
@@ -294,10 +391,10 @@ def main():
     instance[0].wait_until_running()
     print("instance created\n")
     status = ec2.meta.client.describe_instance_status(InstanceIds=instance_id)
+    spinner = Spinner('initializing instance ')
+    
     idx = 0
 
-    spinner = Spinner('initializing instance ')
-    idx = 0
     while status['InstanceStatuses'][0]['InstanceStatus']['Status'] != 'ok':
         spinner.next()
         time.sleep(0.1)
@@ -306,8 +403,11 @@ def main():
             status = ec2.meta.client.describe_instance_status(InstanceIds=instance_id)
     
     print("\ninstance", instance_id[0], "initialized")
-    print("installing ravenML..")
-    time.sleep(100)
+    print("installing necessary software..")
+    if purpose_answer["purpose"] == "RavenML Training":
+        time.sleep(100)
+    else:
+        time.sleep(5)
 
 
     # ssh into instance
@@ -324,9 +424,13 @@ def main():
     else:
         print("\nCommand to SSH (copied to clipboard):", ssh_string,"\n\n")
         pyperclip.copy(ssh_string)
-
+ 
+    if purpose_answer["purpose"] != "RavenML Training":
+        subprocess.call(['scp', '-i', key_file, answers["model"] ,dns + ":~"])
+        subprocess.call(['scp', '-i', key_file, answers["script"] ,dns + ":~"])
     subprocess.call(['ssh', '-i', key_file, dns])
 
 
 if __name__ == "__main__":
     main()
+
