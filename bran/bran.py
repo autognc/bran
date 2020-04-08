@@ -237,6 +237,23 @@ def get_blender_init_script():
     """
 
     user_data_script = """#!/bin/bash
+    n=0
+    procnum=`ps -aux | grep blender| grep -v grep | grep -v Tl | awk '{ print $2 }'`
+    while [ $n == 0 ] || [[ $procnum != "" ]] 
+    do
+    procnum=`ps -aux | grep blender| grep -v grep | grep -v Tl | awk '{ print $2 }'`
+    if [[ $procnum != "" ]]
+    then
+    n=$n+1
+    echo "still running."
+    else
+    echo "has not begun"
+    fi
+    sleep 60s
+    done
+
+    echo "process finished"
+    sudo halt
     """
 
     return user_data_script
