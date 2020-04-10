@@ -186,9 +186,15 @@ def get_blender_questions():
             'name': 'script',
             'message': 'Enter filepath of generation script',
             'validate': lambda p: os.path.isfile(p)
+        },
+        {
+            'type': 'input',
+            'name': 'requirements',
+            'message': 'Enter filepath of requirements.txt file (if left blank, you will be SSH\'d into the instance)',
+            'default': "a",
+            'validate': lambda t: True if (os.path.isfile(t) or t=="a") else False
         }
     ]
-
     return questions
 
 
@@ -445,7 +451,10 @@ def main():
     if purpose_answer["purpose"] != "RavenML Training":
         subprocess.call(['scp', '-i', key_file, answers["model"] ,dns + ":~"])
         subprocess.call(['scp', '-i', key_file, answers["script"] ,dns + ":~"])
-    subprocess.call(['ssh', '-i', key_file, dns])
+        if answers["requirements"]:
+            subprocess.call(['scp', '-i', key_file, answers["requirements"] ,dns + ":~"])
+        else:
+            subprocess.call(['ssh', '-i', key_file, dns])
 
 
 if __name__ == "__main__":
