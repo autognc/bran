@@ -190,9 +190,8 @@ def get_blender_questions():
         {
             'type': 'input',
             'name': 'requirements',
-            'message': 'Enter filepath of requirements.txt file (if left blank, you will be SSH\'d into the instance)',
-            'default': "a",
-            'validate': lambda t: True if (os.path.isfile(t) or t=="a") else False
+            'message': 'Enter filepath of requirements.txt file',
+            'validate': lambda t: os.path.isfile(t) 
         }
     ]
     return questions
@@ -447,14 +446,15 @@ def main():
     else:
         print("\nCommand to SSH (copied to clipboard):", ssh_string,"\n\n")
         pyperclip.copy(ssh_string)
+
  
     if purpose_answer["purpose"] != "RavenML Training":
         subprocess.call(['scp', '-i', key_file, answers["model"] ,dns + ":~"])
         subprocess.call(['scp', '-i', key_file, answers["script"] ,dns + ":~"])
-        if answers["requirements"]:
-            subprocess.call(['scp', '-i', key_file, answers["requirements"] ,dns + ":~"])
-        else:
-            subprocess.call(['ssh', '-i', key_file, dns])
+        subprocess.call(['scp', '-i', key_file, answers["requirements"] ,dns + ":~"])
+        subprocess.call(['ssh', '-i', key_file, dns, "pip3 install -r requirements.txt -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules \n "])
+        print("\n \n Command to generate images:  blender -b " + str(answers["model"].split("/")[-1] + " -P " + str(answers["script"].split("/")[-1] + " \n")))
+    subprocess.call(['ssh', '-i', key_file, dns])
 
 
 if __name__ == "__main__":
