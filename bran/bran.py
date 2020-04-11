@@ -231,10 +231,11 @@ def get_raven_init_script(bran_bucket, plugin, gpu):
     return user_data_script
 
 
-def get_blender_init_script():
+def get_blender_init_script(script_name):
     """
     Bash script represented as a string that will run on startup in the ec2 
-    instance. Adds Blender directory to path. 
+    instance. Adds Blender directory to path. Periodically checks if blender
+    script has finished and kills the intance once the script has stopped
 
     Return:
         user_data_script (string): The boto3 ec2 create instance method converts
@@ -243,23 +244,18 @@ def get_blender_init_script():
 
     user_data_script = """#!/bin/bash
     n=0
-    procnum=`ps -aux | grep blender| grep -v grep | grep -v Tl | awk '{ print $2 }'`
+    procnum=`ps -aux | grep {}| grep -v grep | grep -v Tl`
     while [ $n == 0 ] || [[ $procnum != "" ]] 
     do
-    procnum=`ps -aux | grep blender| grep -v grep | grep -v Tl | awk '{ print $2 }'`
     if [[ $procnum != "" ]]
     then
     n=$n+1
-    echo "still running."
-    else
-    echo "has not begun"
     fi
-    sleep 60s
+    sleep 10m
+    procnum=`ps -aux | grep {}| grep -v grep | grep -v Tl`
     done
-
-    echo "process finished"
     sudo halt
-    """
+    """.format(script_name, script_name)
 
     return user_data_script
 
@@ -330,7 +326,7 @@ def main():
             }
         ]
         user_name = "ec2-user"
-        user_data_script = get_blender_init_script()
+        user_data_script = get_blender_init_script(answers['script'].split('/')[-1])
 
     bucket_name = 'tsl-ec2-keypair'
     security_groups = []
