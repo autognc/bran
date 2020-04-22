@@ -147,7 +147,7 @@ def get_blender_questions():
             a different question
     """
 
-    amis = ['Blender:ami-0c66a2d9734c3f1aa','blender-trial:ami-0f0f23e775b8a5cbc']
+    amis = ['Blender:ami-0c66a2d9734c3f1aa']
     instance_types = ['t2.large','t2.medium', 'g3.4xlarge', 't2.micro', ]
     sg_names = get_security_groups()
     
