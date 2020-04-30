@@ -251,9 +251,10 @@ def get_blender_init_script(script_name):
     then
     n=$n+1
     fi
-    sleep 10m
+    sleep 20m
     procnum=`ps -aux | grep {}| grep -v grep | grep -v Tl`
     done
+    sleep 20m
     sudo halt
     """.format(script_name, script_name)
 
