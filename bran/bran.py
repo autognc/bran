@@ -147,8 +147,8 @@ def get_blender_questions():
             a different question
     """
 
-    amis = ['Blender:ami-0c66a2d9734c3f1aa']
-    instance_types = ['t2.large','t2.medium', 'g3.4xlarge', 't2.micro', ]
+    amis = ['Blender:ami-0c66a2d9734c3f1aa', "Blender-GPU:ami-0e96d01a5638bccd8"]
+    instance_types = ['t2.large', 'g4dn.xlarge','g3.4xlarge', 't2.medium','t2.micro']
     sg_names = get_security_groups()
     
     questions = [
@@ -242,7 +242,23 @@ def get_blender_init_script(script_name):
             the string to a bash script
     """
 
+    aws_config = get_local_awsconfig()
+
     user_data_script = """#!/bin/bash
+    echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instance-id))" >> /etc/profile
+    echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
+    echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
+    echo "export AWS_DEFAULT_REGION=$(echo {})" >> /etc/profile
+    cd /home/ec2-user/.config/blender/2.82/scripts/addons/modules
+    sudo rm -r starfish
+    sudo rm starfish-0.1.0-py3.7.egg-info/
+    cd /home/ec2-user
+    cd starfish
+    git pull
+    pip3 install . --target /home/ec2-user/.config/blender/2.82/scripts/addons/modules --upgrade
+    cd /home/ec2-user
+    sudo yum install -y libXext libSM libXrender
+
     n=0
     procnum=`ps -aux | grep {}| grep -v grep | grep -v Tl`
     while [ $n == 0 ] || [[ $procnum != "" ]] 
@@ -256,7 +272,7 @@ def get_blender_init_script(script_name):
     done
     sleep 20m
     sudo halt
-    """.format(script_name, script_name)
+    """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], script_name, script_name)
 
     return user_data_script
 
