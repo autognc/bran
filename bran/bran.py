@@ -271,7 +271,7 @@ def get_blender_init_script(script_name):
     procnum=`ps -aux | grep {}| grep -v grep | grep -v Tl`
     done
     sleep 20m
-    sudo halt
+    sudo shutdown -P now
     """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], script_name, script_name)
 
     return user_data_script
@@ -415,6 +415,7 @@ def main():
         KeyName='keypair',
         BlockDeviceMappings=storage_info,
         SecurityGroupIds=security_groups,
+        InstanceInitiatedShutdownBehavior='terminate',
         UserData=user_data_script
     )
 
