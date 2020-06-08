@@ -249,16 +249,10 @@ def get_blender_init_script(script_name):
     echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
     echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
     echo "export AWS_DEFAULT_REGION=$(echo {})" >> /etc/profile
-    cd /home/ec2-user/.config/blender/2.82/scripts/addons/modules
-    sudo rm -r starfish
-    sudo rm starfish-0.1.0-py3.7.egg-info/
-    cd /home/ec2-user
-    cd starfish
-    git pull
-    pip3 install . --target /home/ec2-user/.config/blender/2.82/scripts/addons/modules --upgrade
+    pip3 install git+https://github.com/autognc/starfish --no-deps -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules
+    pip3 install opencv-python -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules
     cd /home/ec2-user
     sudo yum install -y libXext libSM libXrender
-
     n=0
     procnum=`ps -aux | grep {}| grep -v grep | grep -v Tl`
     while [ $n == 0 ] || [[ $procnum != "" ]] 
