@@ -90,7 +90,7 @@ def get_raven_questions():
     amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78']
     instance_types = ['t2.medium', 'g3.4xlarge', 't2.micro']
     sg_names = get_security_groups()
-    plugins = ['ravenml_tf_bbox', 'ravenml_tf_semantic', 'ravenml_tf_instance']
+    plugins = ['rmltraintfbbox', 'rmltraintfinstance', 'rmltraintfposeregression', 'rmltraintfsemantic']
     
     questions = [
         {
@@ -115,12 +115,6 @@ def get_raven_questions():
             'type': 'input',
             'name': 'storage',
             'message': 'Enter storage amount (gb)'
-        },
-        {
-            'type': 'input',
-            'name': 'bran_bucket',
-            'message': 'Enter name of bucket where bran install files are stored',
-            'default': 'bran-install-files'
         },
         {
             'type': 'list',
@@ -197,7 +191,7 @@ def get_blender_questions():
     return questions
 
 
-def get_raven_init_script(bran_bucket, plugin, gpu):
+def get_raven_init_script(plugin, gpu):
     """
     Bash script represented as a string that will run on startup in the ec2 
     instance. Downloads the various requirements for raven and starts a docker 
@@ -211,22 +205,29 @@ def get_raven_init_script(bran_bucket, plugin, gpu):
     comet_api_key = get_comet_api_key()
 
     user_data_script = """#!/bin/bash
+    exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instance-id))" >> /etc/profile
     echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
     echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
     echo "export AWS_DEFAULT_REGION=$(echo {})" >> /etc/profile
     echo "export COMET_API_KEY=$(echo {})" >> /etc/profile
+    echo "export RML_{}=true" >> /etc/profile
     source /etc/profile
     cd /home/ubuntu
     git clone https://github.com/autognc/ravenML.git
-    git clone https://github.com/autognc/ravenML-plugins.git
     chown -R ubuntu:ubuntu ravenML/
-    chown -R ubuntu:ubuntu ravenML-plugins/
-    aws s3 cp s3://{}/install_raven.sh .
-    chmod +x install_raven.sh
-    export LC_ALL=C.UTF-8
-    export LANG=C.UTF-8
-    runuser -l ubuntu -c './install_raven.sh -p {} -g {} >> /tmp/install.txt'""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], comet_api_key, bran_bucket, plugin, gpu)
+    cd /home/ubuntu/ravenML/
+    source /home/ubuntu/anaconda3/etc/profile.d/conda.sh
+    conda env create -f environment.yml
+    source /home/ubuntu/anaconda3/bin/activate /home/ubuntu/anaconda3/envs/ravenml
+    echo $CONDA_PREFIX
+    cd /home/ubuntu/ravenML-train-plugins/{}
+    echo $CONDA_PREFIX
+    pip install "git+https://github.com/autognc/ravenML-train-plugins.git#egg=rmltraintfbbox&subdirectory=rmltraintfbbox"
+    cd /home/ubuntu/ravenML/
+    pip install -e . 
+    echo $CONDA_PREFIX
+    """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], comet_api_key, gpu, plugin, plugin)
 
     return user_data_script
 
@@ -325,7 +326,7 @@ def main():
             }
         ]
         user_name = 'ubuntu'
-        user_data_script = get_raven_init_script(answers['bran_bucket'], answers['plugin'], answers['gpu'].lower())
+        user_data_script = get_raven_init_script(answers['plugin'], answers['gpu'])
     else:
         storage_info=[
             {
@@ -435,7 +436,7 @@ def main():
     print("\ninstance", instance_id[0], "initialized")
     print("installing necessary software..")
     if purpose_answer["purpose"] == "RavenML Training":
-        time.sleep(100)
+        time.sleep(180) #for gpu the dependencies take a while to download
     else:
         time.sleep(5)
 
@@ -456,7 +457,7 @@ def main():
         pyperclip.copy(ssh_string)
 
  
-    if purpose_answer["purpose"] != "RavenML Training":
+    if purpose_answer["purpose"] == "Blender Image Generation":
         subprocess.call(['scp', '-i', key_file, answers["model"] ,dns + ":~"])
         subprocess.call(['scp', '-i', key_file, answers["script"] ,dns + ":~"])
         subprocess.call(['scp', '-i', key_file, answers["requirements"] ,dns + ":~"])
