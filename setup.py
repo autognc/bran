@@ -1,10 +1,10 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='bran',
     version='1.1.1',
     description='EC2 instance creation CLI',
-    packages=['bran'],
+    packages=find_packages(),
     install_requires=[
         'boto3>=1.9.104',
         'botocore>=1.12.104',
