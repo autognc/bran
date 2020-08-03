@@ -3,6 +3,7 @@ channels:
     - defaults
 dependencies:
     - python=3.6.8
+    - pip=20.0.2
     - pip:
           - boto3>=1.9.104
           - botocore>=1.12.104
@@ -11,3 +12,5 @@ dependencies:
           - pyinquirer>=1.0.3
           - pyperclip>=1.7.0
           - progress>=1.4
+          - gitpython>=3.0.0
+          
