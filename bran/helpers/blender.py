@@ -79,6 +79,7 @@ def get_blender_init_script(script_name):
     echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
     echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
     echo "export AWS_DEFAULT_REGION=$(echo {})" >> /etc/profile
+    source /etc/profile
     pip3 install git+https://github.com/autognc/starfish --no-deps -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules
     pip3 install opencv-python -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules
     cd /home/ec2-user

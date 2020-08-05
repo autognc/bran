@@ -68,6 +68,12 @@ def get_comet_api_key():
     return api_key
 
 def countdown(t):
+    """
+        sleeps for t seconds and displays a nice little countdown timer during that time
+        
+        Args:
+            t (int): time to sleep for
+    """
     while t:
         mins, secs = divmod(t, 60)
         timeformat = '{:02d}:{:02d}'.format(mins, secs)
