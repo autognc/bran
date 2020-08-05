@@ -5,10 +5,10 @@ import os
 
 def get_raven_branches():
     """
-        Returns a list of branch names in ravenML-training-plugins
+        Returns a list of branch names in ravenML-train-plugins
         
         Return:
-            remote_refs (list): list of ravenML-training-plugins branch names
+            remote_refs (list): list of ravenML-train-plugins branch names
     """
     url = "https://github.com/autognc/ravenML-train-plugins"
     remote_refs = []
@@ -27,7 +27,7 @@ def get_raven_questions():
         questions ([dicts]): a list of dictionaries with each dictionary representing
             a different question
     """
-    # TODO: add AMI's, check CUDA versions, add support for comet-opt plugin
+    # TODO: add AMI's, check CUDA versions, add support for comet-opt plugin, add lab computer
     amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78','Ubuntu Deep Learning:ami-06f57f0480ec007e3']
     instance_types = ['t2.large', 'g4dn.xlarge','g3.4xlarge', 't2.medium','t2.micro']
     sg_names = get_security_groups()
@@ -99,13 +99,13 @@ def get_raven_init_script(plugin, gpu, branch):
     aws_config = get_local_awsconfig()
     comet_api_key = get_comet_api_key()
    
-    ## the following commands are potentially useful but are not needed atm. saving for future use
+    ## the following commands are potentially useful but are not needed/do not work atm. saving for future use
     # pip install "git+https://github.com/autognc/ravenML-train-plugins.git#egg=rmltraintfbbox&subdirectory=rmltraintfbbox" - pip install from subdirectory of github repo
     # source /home/ubuntu/anaconda3/bin/activate /home/ubuntu/anaconda3/envs/ravenml - enter conda env that belongs to a different user
     
     # this script runs config for ravenML upon startup some things to note:
     # ubuntu deep learning AMIs run the user data script as the root user, however aws makes you connect as ubuntu
-    # therefore, one should use chown -R ubuntu:ubuntu <filepath> on any file/directory that is created in ths script 
+    # therefore, one should use chown -R ubuntu:ubuntu <filepath> on any file/directory that is created in this script 
     # aws docs say not to use sudo as a prefix to any command in this script
     user_data_script = """#!/bin/bash
     # direct stdout to /var/log/user-data.log
@@ -120,7 +120,7 @@ def get_raven_init_script(plugin, gpu, branch):
     echo "export RML_{}=true" >> /etc/profile
     source /etc/profile
     
-    # give ubuntu root permissions. TODO: is this dangerous?
+    # give ubuntu root permissions.
     echo "ubuntu ALL = NOPASSWD: ALL" >> /etc/sudoers
     source /etc/sudoers
     

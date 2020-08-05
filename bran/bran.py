@@ -5,8 +5,8 @@ Contact:        nihaldhamani@gmail.com
 Date Modified:  07/15/19
 
 Bran is used as a cli to automatically create and ssh into an ec2 instance 
-given user input settings. Bran automatically sets up the docker container 
-needed to run raven.
+given user input settings. Bran automatically uploads files and configures the
+environment to run ravenML trainings or Blender image generations. 
 """
 import boto3
 from botocore.exceptions import ClientError
