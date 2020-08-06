@@ -210,6 +210,8 @@ def main():
         print("\n \n Command to generate images:  blender -b " + str(answers["model"].split("/")[-1] + " -P " + str(answers["script"].split("/")[-1] + " \n")))
     else:
         subprocess.call(['scp', '-i', key_file, answers["config"] ,dns + ":~"])
+        #if os.path.exists(os.path.expanduser('~/.ravenML/config.yml')):
+            #subprocess.call(['scp', '-i', key_file, os.path.join(os.path.expanduser('~/.ravenML'),'config.yml'),dns + ":~/.ravenML"])
     
     subprocess.call(['ssh', '-i', key_file, dns])
 

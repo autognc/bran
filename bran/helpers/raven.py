@@ -122,7 +122,7 @@ def get_raven_init_script(plugin, gpu, branch):
     echo "export COMET_API_KEY=$(echo {})" >> /etc/profile
     echo "export RML_{}=true" >> /etc/profile
     source /etc/profile
-    
+
     # give ubuntu root permissions.
     echo "ubuntu ALL = NOPASSWD: ALL" >> /etc/sudoers
     source /etc/sudoers
@@ -162,6 +162,13 @@ def get_raven_init_script(plugin, gpu, branch):
     chown -R ubuntu:ubuntu /home/ubuntu/anaconda3/envs/ravenml
     chown -R ubuntu:ubuntu /home/ubuntu/ravenML-train-plugins/
     chown -R ubuntu:ubuntu /home/ubuntu/ravenML/
+    cd /usr/local
+    rm cuda
+    ln -s cuda-10.1 cuda
+    cd /home/ubuntu
+    #ls -al
+    #mkdir .ravenML
+    #chown -R ubuntu:ubuntu /home/ubuntu/.ravenML/
     """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], comet_api_key, gpu, branch, plugin)
 
     return user_data_script
