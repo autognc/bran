@@ -3,14 +3,17 @@ import git
 import os
 
 
-def get_raven_branches():
+def get_raven_branches(url="https://github.com/autognc/ravenML-train-plugins"):
     """
-        Returns a list of branch names in ravenML-train-plugins
+    
+        Returns a list of branch names at github repo specified by url.
         
+        Args:
+            url (str): url to check for branch names. defaults to "https://github.com/autognc/ravenML-train-plugins"
         Return:
             remote_refs (list): list of ravenML-train-plugins branch names
     """
-    url = "https://github.com/autognc/ravenML-train-plugins"
+
     remote_refs = []
     g = git.cmd.Git()
     for ref in g.ls_remote(url).split('\n'):
@@ -28,7 +31,7 @@ def get_raven_questions():
             a different question
     """
     # TODO: add AMI's, check CUDA versions, add support for comet-opt plugin, add lab computer
-    amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78','Ubuntu Deep Learning:ami-06f57f0480ec007e3']
+    amis = ['Ubuntu Deep Learning:ami-0cc472544ce594a19']
     instance_types = ['t2.large', 'g4dn.xlarge','g3.4xlarge', 't2.medium','t2.micro']
     sg_names = get_security_groups()
     branches = get_raven_branches()
