@@ -5,12 +5,15 @@ Contact:        nihaldhamani@gmail.com
 Date Modified:  07/15/19
 
 Bran is used as a cli to automatically create and ssh into an ec2 instance 
-given user input settings. Bran automatically sets up the docker container 
-needed to run raven.
+given user input settings. Bran automatically uploads files and configures the
+environment to run ravenML trainings or Blender image generations. 
 """
 import boto3
 from botocore.exceptions import ClientError
 import os
+from bran.helpers.blender import get_blender_questions, get_blender_init_script
+from bran.helpers.raven import get_raven_questions, get_raven_init_script
+from bran.helpers.utils import countdown, get_local_awsconfig
 from random import randint
 import subprocess
 import time
@@ -19,265 +22,8 @@ import pyperclip
 from PyInquirer import style_from_dict, Token, prompt
 from PyInquirer import Validator, ValidationError
 from boto.s3.key import Key
-import configparser
-from os.path import expanduser
 import tempfile
 from sys import platform
-
-def get_local_awsconfig():
-    """
-    Gets the aws credentials stored on the local machine. The AWSCLI configuration 
-    command stores credentials at ~/.aws/credentials which are accessed and convereted
-    into a dictionary.
-
-    Return:
-        aws_config (dictionary): a dictionary containing aws_access_key_id,
-            aws_secret_access_key, region, and output
-    """
-
-    home = expanduser("~")
-    config = configparser.ConfigParser()
-    aws_config = {}
-    config.read(home + '/.aws/credentials')
-    aws_config['key_id'] = config['default']['aws_access_key_id']
-    aws_config['secret_key'] = config['default']['aws_secret_access_key']
-    config.read(home + '/.aws/config')
-    aws_config['region'] = config['default']['region']
-    aws_config['output'] = config['default']['output']
-
-    return aws_config
-
-def list_to_choices(l):
-    """
-    Converts a python list to choices for PyInquirer question prompts.
-
-    Args:
-        l (list): a python list
-    
-    Return:
-        choices ([dicts]): a list of dictionaries
-    """
-    l = sorted(l)
-    choices = []
-    for item in l:
-        choices.append({'name': item})
-    return choices
-
-def get_security_groups():
-    """
-    Gets all available AWS security group names and ids associated with an AWS role.
-
-    Return:
-        sg_names (list): list of security group id, name, and description
-    """
-    sg_groups = boto3.client('ec2', region_name='us-west-1').describe_security_groups()['SecurityGroups']
-    sg_names = []
-    for sg in sg_groups:
-        sg_names.append(sg['GroupId'] + ': ' + sg['GroupName'] + ': ' + sg['Description'])
-
-    return sg_names
-
-
-def get_raven_questions():
-    """
-    Constructs and returns questions for cli to set up ec2 instance properties for a RavenML training.
-
-    Return:
-        questions ([dicts]): a list of dictionaries with each dictionary representing
-            a different question
-    """
-
-    amis = ['Ubuntu Deep Learning:ami-0f4ae762b012dbf78']
-    instance_types = ['t2.medium', 'g3.4xlarge', 't2.micro']
-    sg_names = get_security_groups()
-    plugins = ['ravenml_tf_bbox', 'ravenml_tf_semantic', 'ravenml_tf_instance']
-    
-    questions = [
-        {
-            'type': 'list',
-            'name': 'ami',
-            'message': 'Select AMI',
-            'choices': amis
-        },
-        {
-            'type': 'list',
-            'name': 'instance',
-            'message': 'Select Instance Type',
-            'choices': instance_types
-        },
-        {
-            'type': 'checkbox',
-            'name': 'sg',
-            'message': 'Select all Security Groups',
-            'choices': list_to_choices(sg_names)
-        },
-        {
-            'type': 'input',
-            'name': 'storage',
-            'message': 'Enter storage amount (gb)'
-        },
-        {
-            'type': 'input',
-            'name': 'bran_bucket',
-            'message': 'Enter name of bucket where bran install files are stored',
-            'default': 'bran-install-files'
-        },
-        {
-            'type': 'list',
-            'name': 'plugin',
-            'message': 'Select the ravenML plugin you wish to install',
-            'choices': list_to_choices(plugins)
-        },
-        {
-            'type': 'list',
-            'name': 'gpu',
-            'message': 'Train on GPU or CPU?',
-            'choices': list_to_choices(['GPU', 'CPU'])
-        }
-    ]
-
-    return questions
-
-def get_blender_questions():
-    """
-    Constructs and returns questions for cli to set up ec2 instance properties for image generation with Blender.
-
-    Return:
-        questions ([dicts]): a list of dictionaries with each dictionary representing
-            a different question
-    """
-
-    amis = ['Blender:ami-0c66a2d9734c3f1aa', "Blender-GPU:ami-0e96d01a5638bccd8"]
-    instance_types = ['t2.large', 'g4dn.xlarge','g3.4xlarge', 't2.medium','t2.micro']
-    sg_names = get_security_groups()
-    
-    questions = [
-        {
-            'type': 'list',
-            'name': 'ami',
-            'message': 'Select AMI',
-            'choices': amis
-        },
-        {
-            'type': 'list',
-            'name': 'instance',
-            'message': 'Select Instance Type',
-            'choices': instance_types
-        },
-        {
-            'type': 'checkbox',
-            'name': 'sg',
-            'message': 'Select all Security Groups',
-            'choices': list_to_choices(sg_names)
-        },
-        {
-            'type': 'input',
-            'name': 'storage',
-            'message': 'Enter storage amount (gb)'
-        },
-        {
-            'type': 'input',
-            'name': 'model',
-            'message': 'Enter filepath of desired blender model',
-            'validate': lambda p: os.path.isfile(p)
-        },
-        {
-            'type': 'input',
-            'name': 'script',
-            'message': 'Enter filepath of generation script',
-            'validate': lambda p: os.path.isfile(p)
-        },
-        {
-            'type': 'input',
-            'name': 'requirements',
-            'message': 'Enter filepath of requirements.txt file',
-            'validate': lambda t: os.path.isfile(t) 
-        }
-    ]
-    return questions
-
-
-def get_raven_init_script(bran_bucket, plugin, gpu):
-    """
-    Bash script represented as a string that will run on startup in the ec2 
-    instance. Downloads the various requirements for raven and starts a docker 
-    container with AWS credentials injected as environment variables.
-
-    Return:
-        user_data_script (string): The boto3 ec2 create instance method converts
-            the string to a bash script
-    """
-    aws_config = get_local_awsconfig()
-    comet_api_key = get_comet_api_key()
-
-    user_data_script = """#!/bin/bash
-    echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instance-id))" >> /etc/profile
-    echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
-    echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
-    echo "export AWS_DEFAULT_REGION=$(echo {})" >> /etc/profile
-    echo "export COMET_API_KEY=$(echo {})" >> /etc/profile
-    source /etc/profile
-    cd /home/ubuntu
-    git clone https://github.com/autognc/ravenML.git
-    git clone https://github.com/autognc/ravenML-plugins.git
-    chown -R ubuntu:ubuntu ravenML/
-    chown -R ubuntu:ubuntu ravenML-plugins/
-    aws s3 cp s3://{}/install_raven.sh .
-    chmod +x install_raven.sh
-    export LC_ALL=C.UTF-8
-    export LANG=C.UTF-8
-    runuser -l ubuntu -c './install_raven.sh -p {} -g {} >> /tmp/install.txt'""".format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], comet_api_key, bran_bucket, plugin, gpu)
-
-    return user_data_script
-
-
-def get_blender_init_script(script_name):
-    """
-    Bash script represented as a string that will run on startup in the ec2 
-    instance. Adds Blender directory to path. Periodically checks if blender
-    script has finished and kills the intance once the script has stopped
-
-    Return:
-        user_data_script (string): The boto3 ec2 create instance method converts
-            the string to a bash script
-    """
-
-    aws_config = get_local_awsconfig()
-
-    user_data_script = """#!/bin/bash
-    echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instance-id))" >> /etc/profile
-    echo "export AWS_ACCESS_KEY_ID=$(echo {})" >> /etc/profile
-    echo "export AWS_SECRET_ACCESS_KEY=$(echo {})" >> /etc/profile
-    echo "export AWS_DEFAULT_REGION=$(echo {})" >> /etc/profile
-    pip3 install git+https://github.com/autognc/starfish --no-deps -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules
-    pip3 install opencv-python -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules
-    cd /home/ec2-user
-    sudo yum install -y libXext libSM libXrender
-    n=0
-    procnum=`ps -aux | grep {}| grep -v grep | grep -v Tl`
-    while [ $n == 0 ] || [[ $procnum != "" ]] 
-    do
-    if [[ $procnum != "" ]]
-    then
-    n=$n+1
-    fi
-    sleep 20m
-    procnum=`ps -aux | grep {}| grep -v grep | grep -v Tl`
-    done
-    sleep 20m
-    sudo shutdown -P now
-    """.format(aws_config['key_id'], aws_config['secret_key'], aws_config['region'], script_name, script_name)
-
-    return user_data_script
-
-def get_comet_api_key():
-
-    ssm = boto3.client('ssm')
-    
-    key_parameter = ssm.get_parameter(Name='COMET_API_KEY', WithDecryption=True)
-    api_key = key_parameter['Parameter']['Value']
-
-    return api_key
 
 def main():
 
@@ -325,7 +71,7 @@ def main():
             }
         ]
         user_name = 'ubuntu'
-        user_data_script = get_raven_init_script(answers['bran_bucket'], answers['plugin'], answers['gpu'].lower())
+        user_data_script = get_raven_init_script(answers['plugin'], answers['gpu'], answers['branch'])
     else:
         storage_info=[
             {
@@ -435,7 +181,7 @@ def main():
     print("\ninstance", instance_id[0], "initialized")
     print("installing necessary software..")
     if purpose_answer["purpose"] == "RavenML Training":
-        time.sleep(100)
+        countdown(235) #for gpu the dependencies take a while to download
     else:
         time.sleep(5)
 
@@ -455,13 +201,16 @@ def main():
         print("\nCommand to SSH (copied to clipboard):", ssh_string,"\n\n")
         pyperclip.copy(ssh_string)
 
- 
-    if purpose_answer["purpose"] != "RavenML Training":
+    # scp relevant files to instance
+    if purpose_answer["purpose"] == "Blender Image Generation":
         subprocess.call(['scp', '-i', key_file, answers["model"] ,dns + ":~"])
         subprocess.call(['scp', '-i', key_file, answers["script"] ,dns + ":~"])
         subprocess.call(['scp', '-i', key_file, answers["requirements"] ,dns + ":~"])
         subprocess.call(['ssh', '-i', key_file, dns, "pip3 install -r requirements.txt -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules \n "])
         print("\n \n Command to generate images:  blender -b " + str(answers["model"].split("/")[-1] + " -P " + str(answers["script"].split("/")[-1] + " \n")))
+    else:
+        subprocess.call(['scp', '-i', key_file, answers["config"] ,dns + ":~"])
+    
     subprocess.call(['ssh', '-i', key_file, dns])
 
 
