@@ -8,7 +8,7 @@ echo "export EC2_ID=$(echo $(curl http://169.254.169.254/latest/meta-data/instan
 echo "export AWS_ACCESS_KEY_ID=$(echo <key_id>)" >> /etc/profile
 echo "export AWS_SECRET_ACCESS_KEY=$(echo <secret_id>)" >> /etc/profile
 echo "export AWS_DEFAULT_REGION=$(echo <aws_region>)" >> /etc/profile
-echo "export COMET_API_KEY=$(echo <comet_key>})" >> /etc/profile
+echo "export COMET_API_KEY=$(echo <comet_key>)" >> /etc/profile
 echo "export RML_<gpu_var>=true" >> /etc/profile
 source /etc/profile
 
