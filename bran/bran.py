@@ -86,7 +86,6 @@ def main():
         ]
         user_name = "ec2-user"
         user_data_script = get_blender_init_script(answers['script'].split('/')[-1])
-        print(user_data_script)
 
     bucket_name = 'tsl-ec2-keypair'
     security_groups = []

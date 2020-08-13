@@ -99,14 +99,7 @@ def get_raven_init_script(plugin, gpu, branch, cuda_version='10.0'):
         user_data_script (string): The boto3 ec2 create instance method converts
             the string to a bash script
     """
-    ## the following commands are potentially useful but are not needed/do not work atm. saving for future use
-    # pip install "git+https://github.com/autognc/ravenML-train-plugins.git#egg=rmltraintfbbox&subdirectory=rmltraintfbbox" - pip install from subdirectory of github repo
-    # source /home/ubuntu/anaconda3/bin/activate /home/ubuntu/anaconda3/envs/ravenml - enter conda env that belongs to a different user
-    
-    # this script runs config for ravenML upon startup some things to note:
-    # ubuntu deep learning AMIs run the user data script as the root user, however aws makes you connect as ubuntu
-    # therefore, one should use chown -R ubuntu:ubuntu <filepath> on any file/directory that is created in this script 
-    # aws docs say not to use sudo as a prefix to any command in this script
+
     aws_config = get_local_awsconfig()
     comet_api_key = get_comet_api_key()
     
@@ -125,6 +118,17 @@ def get_raven_init_script(plugin, gpu, branch, cuda_version='10.0'):
     return script
 
 def get_raven_cuda_version(branch, plugin):
+    """
+        Gets the setup.py of the ravenML-train-plugins branch/plugin from the github website 
+        and returns the correct cuda version to use the tensorflow version listed in the setup.py
+        
+        Args:
+            branch (str)-- branch of ravenML-train-plugins at https://github.com/autognc/ravenML-train-plugins
+            plugin (str)-- ravenML train plugin being setup by bran
+        Returns:
+            cuda version (str)-- '10.1' if tf2 is required. '10.0' otherwise. 
+                This is used to create symlink in userdata script.(see ./scripts/raven_init.sh)
+    """
     url = "https://github.com/autognc/ravenML-train-plugins/blob/{}/{}/setup.py".format(branch, plugin)
     
     req = requests.get(url)

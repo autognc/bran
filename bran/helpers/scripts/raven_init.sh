@@ -1,4 +1,12 @@
 #!/bin/bash
+# the following commands are potentially useful but are not needed/do not work atm. saving for future use
+# pip install "git+https://github.com/autognc/ravenML-train-plugins.git#egg=rmltraintfbbox&subdirectory=rmltraintfbbox" - pip install from subdirectory of github repo
+# source /home/ubuntu/anaconda3/bin/activate /home/ubuntu/anaconda3/envs/ravenml - enter conda env that belongs to a different user
+
+# this script runs config for ravenML upon startup some things to note:
+# ubuntu deep learning AMIs run the user data script as the root user, however aws makes you connect as ubuntu
+# therefore, one should use chown -R ubuntu:ubuntu <filepath> on any file/directory that is created in this script 
+# aws docs say not to use sudo as a prefix to any command in this script
 
 # direct stdout to /var/log/user-data.log
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1

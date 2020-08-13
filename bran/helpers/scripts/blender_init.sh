@@ -5,7 +5,7 @@ echo "export AWS_SECRET_ACCESS_KEY=$(echo <secret_id>)" >> /etc/profile
 echo "export AWS_DEFAULT_REGION=$(echo <aws_region>)" >> /etc/profile
 source /etc/profile
 pip3 install git+https://github.com/autognc/starfish --no-deps -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules
-pip3 install opencv-python -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules
+pip3 install opencv-python==4.2.0.32 -t /home/ec2-user/.config/blender/2.82/scripts/addons/modules
 cd /home/ec2-user
 sudo yum install -y libXext libSM libXrender
 n=0
