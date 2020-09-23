@@ -34,12 +34,18 @@ Developed on Python 3.6.8
 ## Instructions to Run
 1. Make sure that the credentials are stored at ```~/.aws/credentials```
 2. Command to run: ```bran```
-3. Choose between Blender image generation and RavenML training
+3. Choose between Blender image generation and ravenML training
+  * For ravenML: 
+    1. Choose plugin to install and ravenML-train-plugins branch to install from
+    2. Specify path to ravenML config file
+  * For Blender: 
+    1. Specify path to .blend file
+    2. Specify path to image generation script
+    3. Specify path to requirements.txt(listing of python modules needed to run image generation script)
 4. Select options for ec2 instance parameters. **Use g3.4xlarge for GPU trainings and t2.medium for CPU trainings.** Make sure to select the custom security group created earlier. Use around 120 gbs for storage or 160 gbs if using an especially large dataset.
-5. Specify paths to necessary files for upload
-6. Wait until initialized
+5. Wait until initialized
 7. Enter ```yes``` if prompted about adding ssh key to your repo and click enter
 8. You should be ssh'd into the instance automatically with ravenML installed with the plugin selected
 9. start tmux by typing `tmux` into the shell
-10. type the ravenml training or blender image generation command you want inside the started tmux session
+10. type the ravenML training or Blender image generation command you want inside the started tmux session
 11. leave/detach the tmux session by typing `Ctrl+b` and then `d`
