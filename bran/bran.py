@@ -12,7 +12,7 @@ import boto3
 from botocore.exceptions import ClientError
 import os
 from bran.helpers.blender import get_blender_questions, get_blender_init_script
-from bran.helpers.raven import get_raven_questions, get_raven_init_script
+from bran.helpers.raven import get_raven_questions, get_raven_init_script, get_raven_cuda_version
 from bran.helpers.utils import countdown, get_local_awsconfig
 from random import randint
 import subprocess
@@ -24,6 +24,7 @@ from PyInquirer import Validator, ValidationError
 from boto.s3.key import Key
 import tempfile
 from sys import platform
+
 
 def main():
 
@@ -71,7 +72,8 @@ def main():
             }
         ]
         user_name = 'ubuntu'
-        user_data_script = get_raven_init_script(answers['plugin'], answers['gpu'], answers['branch'])
+        cuda_version = get_raven_cuda_version(answers['branch'], answers['plugin'])
+        user_data_script = get_raven_init_script(answers['plugin'], answers['gpu'], answers['branch'], cuda_version)
     else:
         storage_info=[
             {
@@ -210,6 +212,8 @@ def main():
         print("\n \n Command to generate images:  blender -b " + str(answers["model"].split("/")[-1] + " -P " + str(answers["script"].split("/")[-1] + " \n")))
     else:
         subprocess.call(['scp', '-i', key_file, answers["config"] ,dns + ":~"])
+        if os.path.exists(os.path.expanduser('~/.ravenML/config.yml')):
+            subprocess.call(['scp', '-i', key_file, os.path.join(os.path.expanduser('~/.ravenML'),'config.yml'),dns + ":~/.ravenML/config.yml"])
     
     subprocess.call(['ssh', '-i', key_file, dns])
 
