@@ -13,7 +13,9 @@ Developed on Python 3.6.8
 
 1. Clone repository onto local machine: ```git clone https://github.com/autognc/bran.git```
 2. Navigate to the downloaded repository: ```cd bran```
-3. Install with pip: ```pip install -e .```
+3. Create conda environment: ```conda env create -f environment.yml```
+4. Activate conda environment: ```conda activate bran```
+5. Install with pip: ```pip install -e .```
 
 ## Configure Security Groups
 
@@ -32,12 +34,12 @@ Developed on Python 3.6.8
 ## Instructions to Run
 1. Make sure that the credentials are stored at ```~/.aws/credentials```
 2. Command to run: ```bran```
-3. Select options for ec2 instance parameters. **Use g3.4xlarge for GPU trainings and t2.medium for CPU trainings.** Make sure to select the custom security group created earlier. Use around 100 gbs for storage.
-4. Wait until initialized
-5. Enter ```yes``` if prompted about adding ssh key to your repo and click enter
-6. You should be ssh'd into the instance automatically with ravenML installed with the plugin selected
-7. start tmux by typing `tmux` into the shell
-8. type the ravenml train command you want inside the started tmux session
-9. leave/detach the tmux session by typing `Ctrl+b` and then `d`
-10. run the following command to start tensorboard: `nohup tensorboard --logdir=/home/ubuntu/.ravenML/<plugin-name>/temp/models/model --port=6007 &`
-11. nagivate to `<ip-of-ec2-instance>:6007` in your browser to see tensorboard
+3. Choose between Blender image generation and RavenML training
+4. Select options for ec2 instance parameters. **Use g3.4xlarge for GPU trainings and t2.medium for CPU trainings.** Make sure to select the custom security group created earlier. Use around 120 gbs for storage or 160 gbs if using an especially large dataset.
+5. Specify paths to necessary files for upload
+6. Wait until initialized
+7. Enter ```yes``` if prompted about adding ssh key to your repo and click enter
+8. You should be ssh'd into the instance automatically with ravenML installed with the plugin selected
+9. start tmux by typing `tmux` into the shell
+10. type the ravenml training or blender image generation command you want inside the started tmux session
+11. leave/detach the tmux session by typing `Ctrl+b` and then `d`
