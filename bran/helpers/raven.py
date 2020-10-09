@@ -35,7 +35,7 @@ def get_raven_questions():
     instance_types = ['t2.large', 'g4dn.xlarge','g3.4xlarge', 't2.medium','t2.micro']
     sg_names = get_security_groups()
     branches = get_raven_branches()
-    plugins = ['rmltraintfbbox', 'rmltraintfinstance', 'rmltraintfposeregression', 'rmltraintfsemantic']
+    plugins = ['rmltraintfbbox', 'rmltraintfbboxcometopt','rmltraintfbboxlegacy','rmltraintfinstance', 'rmltraintfposeregression', 'rmltraintfsemantic']
     
     questions = [
         {
