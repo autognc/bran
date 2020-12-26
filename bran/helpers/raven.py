@@ -96,7 +96,7 @@ def get_raven_questions(plugin_type):
 
     return questions
 
-def get_raven_init_script(plugin, gpu, branch, cuda_version='10.1'):
+def get_raven_init_script(plugin, plugin_type, gpu, branch, cuda_version='10.1'):
     """
     Bash script represented as a string that will run on startup in the ec2 
     instance. Downloads the various requirements for raven and starts a docker 
@@ -122,6 +122,7 @@ def get_raven_init_script(plugin, gpu, branch, cuda_version='10.1'):
     script = script.replace('<branch_name>', branch)
     script = script.replace('<plugin_name>', plugin)
     script = script.replace('<cuda_version>', cuda_version)
+    script = script.replace('<plugin_type>', plugin_type)
     return script
 
 def get_raven_cuda_version(plugin_type, branch, plugin):

@@ -54,7 +54,7 @@ def main():
         questions = get_blender_questions()
     else:
         if purpose_answer['purpose'] == 'RavenML Training':
-            plugin_type == 'train'
+            plugin_type = 'train'
         elif purpose_answer['purpose'] == 'RavenML Dataset Creation':
             plugin_type = 'dataset'
         questions = get_raven_questions(plugin_type)
@@ -89,7 +89,7 @@ def main():
         ]
         user_name = 'ubuntu'
         cuda_version = get_raven_cuda_version(plugin_type, answers['branch'], answers['plugin'])
-        user_data_script = get_raven_init_script(answers['plugin'], answers['gpu'], answers['branch'], cuda_version)
+        user_data_script = get_raven_init_script(answers['plugin'], plugin_type, answers['gpu'], answers['branch'], cuda_version)
     
     bucket_name = 'tsl-ec2-keypair'
     security_groups = []

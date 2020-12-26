@@ -44,23 +44,23 @@ cd /home/ubuntu
 # would be better to pip install directly from github instead of cloning, but data_files keyword in setup.py of rmltraintfbbox
 # causes install to fail. According to setuptools docs, data_files is deprecated and does not work with wheels. 
 # Need to look into removing that from all branches
-git clone --single-branch -b <branch_name> https://github.com/autognc/ravenML-train-plugins
+git clone --single-branch -b <branch_name> https://github.com/autognc/ravenML-<plugin_type>-plugins
 
 # install rml and plugin, set permissions so ubuntu user can pip install to ravenml conda env
 cd /home/ubuntu/ravenML/
 pip install -v -e . 
 chown -R ubuntu:ubuntu /home/ubuntu/anaconda3/envs/ravenml
-chown -R ubuntu:ubuntu /home/ubuntu/ravenML-train-plugins/
+chown -R ubuntu:ubuntu /home/ubuntu/ravenML-<plugin_type>-plugins/
 chown -R ubuntu:ubuntu /home/ubuntu/ravenML/
 
 # for some reason object detection protos are installed incorrectly  if the root user installs using 'pip install -e .'
 # instead we run the install command as ubuntu and that seems to work
-su - ubuntu -c "/home/ubuntu/anaconda3/envs/ravenml/bin/pip install -e /home/ubuntu/ravenML-train-plugins/<plugin_name>/"
+su - ubuntu -c "/home/ubuntu/anaconda3/envs/ravenml/bin/pip install -e /home/ubuntu/ravenML-<plugin_type>-plugins/<plugin_name>/"
 
 # set permissions again to account for any new files created during install
 cd /home/ubuntu
 chown -R ubuntu:ubuntu /home/ubuntu/anaconda3/envs/ravenml
-chown -R ubuntu:ubuntu /home/ubuntu/ravenML-train-plugins/
+chown -R ubuntu:ubuntu /home/ubuntu/ravenML-<plugin_type>-plugins/
 chown -R ubuntu:ubuntu /home/ubuntu/ravenML/
 
 ## set cuda symlink to cuda 10.0 for tf1 or 10.1 for tf2
