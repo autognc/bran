@@ -3,17 +3,17 @@ import git
 import os
 import requests
 
-def get_raven_branches(url="https://github.com/autognc/ravenML-train-plugins"):
+def get_raven_branches(plugin_type):
     """
     
         Returns a list of branch names at github repo specified by url.
         
         Args:
-            url (str): url to check for branch names. defaults to "https://github.com/autognc/ravenML-train-plugins"
+            plugin_type (str): string that specifies use of either training or dataset creation plugins
         Return:
             remote_refs (list): list of ravenML-train-plugins branch names
     """
-
+    url = f'https://github.com/autognc/ravenML-{plugin_type}-plugins'
     remote_refs = []
     g = git.cmd.Git()
     for ref in g.ls_remote(url).split('\n'):
@@ -21,11 +21,13 @@ def get_raven_branches(url="https://github.com/autognc/ravenML-train-plugins"):
         if ref.startswith("refs/heads/"):
             remote_refs.append(ref[11:])
     return remote_refs
-    
-def get_raven_questions():
+
+def get_raven_questions(plugin_type):
     """
     Constructs and returns questions for cli to set up ec2 instance properties for a RavenML training.
 
+    Args:
+        plugin_type (str): string that specifies use of either training or dataset creation plugins
     Return:
         questions ([dicts]): a list of dictionaries with each dictionary representing
             a different question
@@ -34,8 +36,13 @@ def get_raven_questions():
     amis = ['Ubuntu Deep Learning:ami-0cc472544ce594a19']
     instance_types = ['t2.large', 'g4dn.xlarge','g3.4xlarge', 't2.medium','t2.micro']
     sg_names = get_security_groups()
-    branches = get_raven_branches()
-    plugins = ['rmltraintfbbox', 'rmltraintfbboxcometopt','rmltraintfbboxlegacy','rmltraintfinstance', 'rmltraintfposeregression', 'rmltraintfsemantic']
+    branches = get_raven_branches(plugin_type)
+
+    #TODO: get plugin names programatically, maybe using svn
+    if plugin_type == 'train':
+        plugins = ['rmltraintfbbox', 'rmltraintfbboxcometopt','rmltraintfbboxlegacy','rmltraintfinstance', 'rmltraintfposeregression', 'rmltraintfsemantic']
+    else:
+        plugins = ['rmldatatfrecord']
     
     questions = [
         {
@@ -64,13 +71,13 @@ def get_raven_questions():
         {
             'type': 'list',
             'name': 'plugin',
-            'message': 'Select the ravenML plugin you wish to install',
+            'message': f'Select the ravenML {plugin_type} plugin you wish to install',
             'choices': list_to_choices(plugins)
         },
         {
             'type': 'list',
             'name': 'branch',
-            'message': 'Select the ravenML-train-plugins branch you wish to clone',
+            'message': f'Select the ravenML-{plugin_type}-plugins branch you wish to clone',
             'choices': list_to_choices(branches)
         },
         {
@@ -89,7 +96,7 @@ def get_raven_questions():
 
     return questions
 
-def get_raven_init_script(plugin, gpu, branch, cuda_version='10.0'):
+def get_raven_init_script(plugin, gpu, branch, cuda_version='10.1'):
     """
     Bash script represented as a string that will run on startup in the ec2 
     instance. Downloads the various requirements for raven and starts a docker 
@@ -117,7 +124,7 @@ def get_raven_init_script(plugin, gpu, branch, cuda_version='10.0'):
     script = script.replace('<cuda_version>', cuda_version)
     return script
 
-def get_raven_cuda_version(branch, plugin):
+def get_raven_cuda_version(plugin_type, branch, plugin):
     """
         Gets the setup.py of the ravenML-train-plugins branch/plugin from the github website 
         and returns the correct cuda version to use the tensorflow version listed in the setup.py
@@ -129,15 +136,18 @@ def get_raven_cuda_version(branch, plugin):
             cuda version (str)-- '10.1' if tf2 is required. '10.0' otherwise. 
                 This is used to create symlink in userdata script.(see ./scripts/raven_init.sh)
     """
-    url = "https://github.com/autognc/ravenML-train-plugins/blob/{}/{}/setup.py".format(branch, plugin)
-    
+    url = f'https://github.com/autognc/ravenML-{plugin_type}-plugins/blob/{branch}/{plugin}/setup.py'
+
     req = requests.get(url)
     
     content = str(req.content)
     
-    loc = content.find('tensorflow==')
-    
-    version = int(content[loc+len('tensorflow==')])
+    try:
+        loc = content.find('tensorflow==')
+        version = int(content[loc+len('tensorflow==')])
+    except:
+        #if no TF version specified, assumes TF2
+        version = 2
     
     if version == 2:
         return '10.1'
