@@ -44,24 +44,40 @@ def main():
             'type': 'list',
             'name': 'purpose',
             'message': 'Select Instance Purpose',
-            'choices': ["Blender Image Generation", "RavenML Training"]
+            'choices': ['Blender Image Generation', 'RavenML Training', 'RavenML Dataset Creation']
         }
     ]
     purpose_answer = prompt(purpose_question, style=style)
 
     print("Warning: choose these options carefully as they are associated with real costs")
-    if purpose_answer["purpose"] == "RavenML Training":
-        questions = get_raven_questions()
-    else:
+    if purpose_answer['purpose'] == 'Blender Image Generation':
         questions = get_blender_questions()
+    else:
+        if purpose_answer['purpose'] == 'RavenML Training':
+            plugin_type = 'train'
+        elif purpose_answer['purpose'] == 'RavenML Dataset Creation':
+            plugin_type = 'dataset'
+        questions = get_raven_questions(plugin_type)
+
     answers = prompt(questions, style=style)
 
     if len(answers['storage']) == 0:
         answers['storage'] = 100
 
     # prepare data for ec2
-
-    if purpose_answer["purpose"] == "RavenML Training":
+    if purpose_answer['purpose'] == 'Blender Image Generation':
+        storage_info=[
+            {
+                'DeviceName': '/dev/xvda',
+                'Ebs': {
+                    'VolumeSize': int(answers['storage']),
+                    'VolumeType': 'gp2'
+                }
+            }
+        ]
+        user_name = 'ec2-user'
+        user_data_script = get_blender_init_script(answers['script'].split('/')[-1])
+    else:
         storage_info=[
             {
                 'DeviceName': '/dev/sda1',
@@ -72,25 +88,13 @@ def main():
             }
         ]
         user_name = 'ubuntu'
-        cuda_version = get_raven_cuda_version(answers['branch'], answers['plugin'])
-        user_data_script = get_raven_init_script(answers['plugin'], answers['gpu'], answers['branch'], cuda_version)
-    else:
-        storage_info=[
-            {
-                'DeviceName': '/dev/xvda',
-                'Ebs': {
-                    'VolumeSize': int(answers['storage']),
-                    'VolumeType': 'gp2'
-                }
-            }
-        ]
-        user_name = "ec2-user"
-        user_data_script = get_blender_init_script(answers['script'].split('/')[-1])
-
+        cuda_version = get_raven_cuda_version(plugin_type, answers['branch'], answers['plugin'])
+        user_data_script = get_raven_init_script(answers['plugin'], plugin_type, answers['gpu'], answers['branch'], cuda_version)
+    
     bucket_name = 'tsl-ec2-keypair'
     security_groups = []
     for sg in answers['sg']:
-        sg_id = sg.split(":")[0]
+        sg_id = sg.split(':')[0]
         security_groups.append(sg_id)
 
     ec2 = boto3.resource('ec2')

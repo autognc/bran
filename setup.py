@@ -12,7 +12,8 @@ setup(
         'pyinquirer>=1.0.3',
         'pyperclip>=1.7.0',
         'progress>=1.4',
-        'gitpython>=3.0.0'
+        'gitpython>=3.0.0',
+        'requests'
     ],
     entry_points='''
       [console_scripts]
