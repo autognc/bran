@@ -34,13 +34,21 @@ def get_raven_questions(plugin_type):
     """
     # TODO: add AMI's, check CUDA versions, add support for comet-opt plugin, add lab computer
     amis = ['Ubuntu Deep Learning:ami-0cc472544ce594a19']
-    instance_types = ['t2.large', 'g4dn.xlarge','g3.4xlarge', 't2.medium','t2.micro']
+    instance_types = ['t2.large', 'g4dn.xlarge', 'g3.8xlarge', 'g3.16xlarge','g3.4xlarge', 't2.medium','t2.micro']
     sg_names = get_security_groups()
     branches = get_raven_branches(plugin_type)
 
     #TODO: get plugin names programatically, maybe using svn
     if plugin_type == 'train':
-        plugins = ['rmltraintfbbox', 'rmltraintfbboxcometopt','rmltraintfbboxlegacy','rmltraintfinstance', 'rmltraintfposeregression', 'rmltraintfsemantic']
+        plugins = [
+            'rmltraintfbbox',
+            'rmltraintfmobilepose', 
+            'rmltraintfbboxcometopt',
+            'rmltraintfbboxlegacy',
+            'rmltraintfinstance', 
+            'rmltraintfposeregression', 
+            'rmltraintfsemantic'
+        ]
     else:
         plugins = ['rmldatatfrecord']
     
