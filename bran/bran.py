@@ -103,7 +103,20 @@ def main():
     # reads keypair from s3 bucket. If it doesn't exist, then creates both
     # the bucket and the keypair.
 
-    aws_config = get_local_awsconfig()
+    config_dict = get_local_awsconfig()
+    if len(config_dict) > 1:
+        config_question = [
+        {
+            'type': 'list',
+            'name': 'config',
+            'message': 'Select AWS Config:',
+            'choices': [config_key for config_key in config_dict]
+        }
+        ]
+        config_answer = prompt(purpose_question, style=style)
+        aws_config = config_dict[config_answer]
+    else:
+        aws_config = config_dict['default']
 
     bucket_exists = False
     for buck in list(s3.buckets.all()):

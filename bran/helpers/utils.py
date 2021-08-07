@@ -19,8 +19,9 @@ def get_local_awsconfig():
     config = configparser.ConfigParser()
     aws_config = {}
     config.read(home + '/.aws/credentials')
-    aws_config['key_id'] = config['default']['aws_access_key_id']
-    aws_config['secret_key'] = config['default']['aws_secret_access_key']
+    for key in config:
+        aws_config[key]['key_id'] = config['default']['aws_access_key_id']
+        aws_config[key]['secret_key'] = config['default']['aws_secret_access_key']
     config.read(home + '/.aws/config')
     aws_config['region'] = config['default']['region']
     aws_config['output'] = config['default']['output']
