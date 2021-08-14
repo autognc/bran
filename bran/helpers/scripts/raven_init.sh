@@ -18,6 +18,7 @@ echo "export AWS_SECRET_ACCESS_KEY=$(echo <secret_id>)" >> /etc/profile
 echo "export AWS_DEFAULT_REGION=$(echo <aws_region>)" >> /etc/profile
 echo "export COMET_API_KEY=$(echo <comet_key>)" >> /etc/profile
 echo "export RML_<gpu_var>=true" >> /etc/profile
+#add for sts key
 source /etc/profile
 
 # give ubuntu root permissions.

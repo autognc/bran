@@ -117,6 +117,47 @@ def main():
         aws_config = config_dict[config_answer]
     else:
         aws_config = config_dict['default']
+    
+    sts_question = [
+        {
+            'type': 'confirm',
+            'name': 'sts',
+            'message': 'Would you like an STS key?',
+            'default' : True
+        }
+    ]
+    sts_answer = prompt(sts_question, style=style)
+    sts_key = None
+    if( sts_answer ):
+        #put in script directory, check if file exists
+        #os.path.join(os.path.dirname(os.path.realpath(__file__)), 'scripts', 'raven_init.sh')
+        #sts_flags = os.O_RDWR | os.O_CREAT
+        #sts_file = os.open(os.path.expanduser('./sts_key.yml'), sts_flags))
+        if( not os.path.exists(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers', 'scripts', 'sts_key.json')):
+             sts_val_question = [
+                {
+                'type': 'input',
+                'name': 'sts',
+                'message': 'Input STS key:',
+                'default' : True
+                }
+            ]
+            sts_val_answer = prompt(sts_val_question, style=style)
+            sts_key = sts_val_answer[sts]
+            #prompt then write
+            #sts_serial_numer = boto3.
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers', 'scripts', 'sts_key.json'), 'w') as outfile:
+                #outfile.write('[STS KEY VAL]')
+                #outfile.write('STS Key = ' + sts_val_answer[sts])
+                outfile.write(sts_val_answer[sts])
+        else:
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers', 'scripts', 'sts_key.json'), 'r') as infile:
+                sts_key = infile.read()
+           
+
+
+
+    
 
     bucket_exists = False
     for buck in list(s3.buckets.all()):

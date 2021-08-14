@@ -106,6 +106,9 @@ def get_raven_questions(plugin_type):
 
 def get_raven_init_script(plugin, plugin_type, gpu, branch, cuda_version='10.1'):
     """
+    change to take local aws_config as parameter
+    if no sts key in the config, set to empty
+
     Bash script represented as a string that will run on startup in the ec2 
     instance. Downloads the various requirements for raven and starts a docker 
     container with AWS credentials injected as environment variables.

@@ -20,11 +20,13 @@ def get_local_awsconfig():
     aws_config = {}
     config.read(home + '/.aws/credentials')
     for key in config:
-        aws_config[key]['key_id'] = config['default']['aws_access_key_id']
-        aws_config[key]['secret_key'] = config['default']['aws_secret_access_key']
+        aws_config[key]['key_id'] = config[key]['aws_access_key_id']
+        aws_config[key]['secret_key'] = config[key]['aws_secret_access_key']
     config.read(home + '/.aws/config')
-    aws_config['region'] = config['default']['region']
-    aws_config['output'] = config['default']['output']
+    #read in 
+    for key in aws_config:
+        aws_config[key]['region'] = config['default']['region']
+        aws_config[key]['output'] = config['default']['output']
 
     return aws_config
 
