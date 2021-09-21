@@ -13,7 +13,7 @@ from botocore.exceptions import ClientError
 import os
 from bran.helpers.blender import get_blender_questions, get_blender_init_script
 from bran.helpers.raven import get_raven_questions, get_raven_init_script, get_raven_cuda_version
-from bran.helpers.utils import countdown, get_local_awsconfig
+from bran.helpers.utils import countdown, get_local_awsconfig, list_to_choices
 from random import randint
 import subprocess
 import time
@@ -39,16 +39,57 @@ def main():
     Token.Question: '',
     })
 
+    config_dict = get_local_awsconfig()
+
     purpose_question = [
         {
             'type': 'list',
             'name': 'purpose',
             'message': 'Select Instance Purpose',
             'choices': ['Blender Image Generation', 'RavenML Training', 'RavenML Dataset Creation']
+        },
+        {
+            'type': 'list',
+            'name': 'config',
+            'message': 'Select AWS Config:',
+            'choices': [key for key in config_dict.keys()]
+        },
+        {
+            'type': 'confirm',
+            'name': 'sts',
+            'message': 'Would you like an STS key?',
+            'default' : False
         }
     ]
     purpose_answer = prompt(purpose_question, style=style)
+    #print(purpose_answer)
+    aws_config = config_dict[purpose_answer['config']]
+    if( purpose_answer['sts'] ):
+        #put in script directory, check if file exists
+        #os.path.join(os.path.dirname(os.path.realpath(__file__)), 'scripts', 'raven_init.sh')
+        #sts_flags = os.O_RDWR | os.O_CREAT
+        #sts_file = os.open(os.path.expanduser('./sts_key.yml'), sts_flags))
+        if( not os.path.exists(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers', 'scripts', 'sts_key.json'))):
+            sts_val_question = [
+                {
+                'type': 'input',
+                'name': 'key',
+                'message': 'Input STS key:',
+                }
+            ]
+            sts_val_answer = prompt(sts_val_question, style=style)
+            sts_key = sts_val_answer['key']
+            #prompt then write
+            #sts_serial_numer = boto3.
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers', 'scripts', 'sts_key.json'), 'w') as outfile:
+                #outfile.write('[STS KEY VAL]')
+                #outfile.write('STS Key = ' + sts_val_answer[sts])
+                outfile.write(sts_val_answer['key'])
+        else:
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers', 'scripts', 'sts_key.json'), 'r') as infile:
+                sts_key = infile.read()
 
+        print("STS KEY: ",sts_key )
     print("Warning: choose these options carefully as they are associated with real costs")
     if purpose_answer['purpose'] == 'Blender Image Generation':
         questions = get_blender_questions()
@@ -76,7 +117,7 @@ def main():
             }
         ]
         user_name = 'ec2-user'
-        user_data_script = get_blender_init_script(answers['script'].split('/')[-1])
+        user_data_script = get_blender_init_script(answers['script'].split('/')[-1], aws_config)
     else:
         storage_info=[
             {
@@ -89,7 +130,7 @@ def main():
         ]
         user_name = 'ubuntu'
         cuda_version = get_raven_cuda_version(plugin_type, answers['branch'], answers['plugin'])
-        user_data_script = get_raven_init_script(answers['plugin'], plugin_type, answers['gpu'], answers['branch'], cuda_version)
+        user_data_script = get_raven_init_script(aws_config, answers['plugin'], plugin_type, answers['gpu'], answers['branch'], cuda_version)
     
     bucket_name = 'tsl-ec2-keypair'
     security_groups = []
@@ -102,63 +143,7 @@ def main():
     
     # reads keypair from s3 bucket. If it doesn't exist, then creates both
     # the bucket and the keypair.
-
-    config_dict = get_local_awsconfig()
-    if len(config_dict) > 1:
-        config_question = [
-        {
-            'type': 'list',
-            'name': 'config',
-            'message': 'Select AWS Config:',
-            'choices': [config_key for config_key in config_dict]
-        }
-        ]
-        config_answer = prompt(purpose_question, style=style)
-        aws_config = config_dict[config_answer]
-    else:
-        aws_config = config_dict['default']
-    
-    sts_question = [
-        {
-            'type': 'confirm',
-            'name': 'sts',
-            'message': 'Would you like an STS key?',
-            'default' : True
-        }
-    ]
-    sts_answer = prompt(sts_question, style=style)
-    sts_key = None
-    if( sts_answer ):
-        #put in script directory, check if file exists
-        #os.path.join(os.path.dirname(os.path.realpath(__file__)), 'scripts', 'raven_init.sh')
-        #sts_flags = os.O_RDWR | os.O_CREAT
-        #sts_file = os.open(os.path.expanduser('./sts_key.yml'), sts_flags))
-        if( not os.path.exists(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers', 'scripts', 'sts_key.json')):
-             sts_val_question = [
-                {
-                'type': 'input',
-                'name': 'sts',
-                'message': 'Input STS key:',
-                'default' : True
-                }
-            ]
-            sts_val_answer = prompt(sts_val_question, style=style)
-            sts_key = sts_val_answer[sts]
-            #prompt then write
-            #sts_serial_numer = boto3.
-            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers', 'scripts', 'sts_key.json'), 'w') as outfile:
-                #outfile.write('[STS KEY VAL]')
-                #outfile.write('STS Key = ' + sts_val_answer[sts])
-                outfile.write(sts_val_answer[sts])
-        else:
-            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'helpers', 'scripts', 'sts_key.json'), 'r') as infile:
-                sts_key = infile.read()
            
-
-
-
-    
-
     bucket_exists = False
     for buck in list(s3.buckets.all()):
         if buck.name.startswith(bucket_name):

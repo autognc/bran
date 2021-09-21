@@ -61,7 +61,7 @@ def get_blender_questions():
 
 
 
-def get_blender_init_script(script_name):
+def get_blender_init_script(script_name, config):
     """
     Bash script represented as a string that will run on startup in the ec2 
     instance. Adds Blender directory to path. Periodically checks if blender
@@ -72,7 +72,7 @@ def get_blender_init_script(script_name):
             the string to a bash script
     """
 
-    aws_config = get_local_awsconfig()
+    aws_config = config
     script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'scripts', 'blender_init.sh')
     
     with open(script_path, 'r') as stream:

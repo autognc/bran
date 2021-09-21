@@ -37,6 +37,7 @@ def get_raven_questions(plugin_type):
     instance_types = ['t2.large', 'g4dn.xlarge', 'g3.8xlarge', 'g3.16xlarge','g3.4xlarge', 't2.medium','t2.micro']
     sg_names = get_security_groups()
     branches = get_raven_branches(plugin_type)
+    config_dict = get_local_awsconfig()
 
     #TODO: get plugin names programatically, maybe using svn
     if plugin_type == 'train':
@@ -99,12 +100,13 @@ def get_raven_questions(plugin_type):
             'name': 'gpu',
             'message': 'Train on GPU or CPU?',
             'choices': list_to_choices(['GPU', 'CPU'])
-        }
+        },
+
     ]
 
     return questions
 
-def get_raven_init_script(plugin, plugin_type, gpu, branch, cuda_version='10.1'):
+def get_raven_init_script(config, plugin, plugin_type, gpu, branch, cuda_version='10.1'):
     """
     change to take local aws_config as parameter
     if no sts key in the config, set to empty
@@ -118,7 +120,7 @@ def get_raven_init_script(plugin, plugin_type, gpu, branch, cuda_version='10.1')
             the string to a bash script
     """
 
-    aws_config = get_local_awsconfig()
+    aws_config = config
     comet_api_key = get_comet_api_key()
     
     script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'scripts', 'raven_init.sh')

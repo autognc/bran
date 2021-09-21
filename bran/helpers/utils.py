@@ -19,14 +19,17 @@ def get_local_awsconfig():
     config = configparser.ConfigParser()
     aws_config = {}
     config.read(home + '/.aws/credentials')
+    
     for key in config:
-        aws_config[key]['key_id'] = config[key]['aws_access_key_id']
-        aws_config[key]['secret_key'] = config[key]['aws_secret_access_key']
+        temp_config = {}
+        temp_config['key_id'] = config[key.lower()]['aws_access_key_id']
+        temp_config['secret_key'] = config[key.lower()]['aws_secret_access_key']
+        aws_config[key] = temp_config
     config.read(home + '/.aws/config')
     #read in 
     for key in aws_config:
-        aws_config[key]['region'] = config['default']['region']
-        aws_config[key]['output'] = config['default']['output']
+        aws_config[key]['region'] = config[key.lower()]['region']
+        aws_config[key]['output'] = config[key.lower()]['output']
 
     return aws_config
 
@@ -36,7 +39,7 @@ def list_to_choices(l):
 
     Args:
         l (list): a python list
-    
+
     Return:
         choices ([dicts]): a list of dictionaries
     """
