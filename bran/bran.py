@@ -88,7 +88,7 @@ def main():
             }
         ]
         user_name = 'ubuntu'
-        cuda_version = get_raven_cuda_version(plugin_type, answers['branch'], answers['plugin'])
+        cuda_version = answers["cuda"].split(':')[0] #get_raven_cuda_version(plugin_type, answers['branch'], answers['plugin'])
         user_data_script = get_raven_init_script(answers['plugin'], plugin_type, answers['gpu'], answers['branch'], cuda_version)
     
     bucket_name = 'tsl-ec2-keypair'

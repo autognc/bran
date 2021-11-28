@@ -33,11 +33,11 @@ def get_raven_questions(plugin_type):
             a different question
     """
     # TODO: add AMI's, check CUDA versions, add support for comet-opt plugin, add lab computer
-    amis = ['Ubuntu Deep Learning:ami-0cc472544ce594a19']
-    instance_types = ['t2.large', 'g4dn.xlarge', 'g3.8xlarge', 'g3.16xlarge','g3.4xlarge', 't2.medium','t2.micro']
+    amis = ['Ubuntu Deep Learning:ami-0cc472544ce594a19', 'Ubuntu Deep Learning w/ CUDA 11.0:ami-0b6333eb0a7438ac5']
+    instance_types = ['t2.large', 'g4dn.xlarge', 'g4dn.2xlarge', 'g3.8xlarge', 'g3.16xlarge','g3.4xlarge', 't2.medium','t2.micro']
     sg_names = get_security_groups()
     branches = get_raven_branches(plugin_type)
-
+    cuda_versions = ["11.0: tensorflow version >= 2.4","10.1: 2.4 > tensorflow version > 2.0", "10.0: 2.0 >= tensorflow version"]
     #TODO: get plugin names programatically, maybe using svn
     if plugin_type == 'train':
         plugins = [
@@ -87,6 +87,12 @@ def get_raven_questions(plugin_type):
             'name': 'branch',
             'message': f'Select the ravenML-{plugin_type}-plugins branch you wish to clone',
             'choices': list_to_choices(branches)
+        },
+        {
+            'type': 'list',
+            'name': 'cuda',
+            'message': f'Select the CUDA version that you wish to use \n For compatibility see: https://www.tensorflow.org/install/source',
+            'choices': list_to_choices(cuda_versions)
         },
         {
             'type': 'input',
